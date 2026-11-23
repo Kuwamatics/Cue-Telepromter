@@ -101,6 +101,16 @@ kbd{font:600 12px Archivo,sans-serif;border:1px solid var(--line);border-bottom-
 .badge{position:absolute;right:14px;bottom:14px;z-index:3;font:600 13px Archivo,sans-serif;color:#ddd;background:#000b;border:1px solid #333;border-radius:20px;padding:4px 10px}
 .cam{position:absolute;top:14px;right:14px;width:clamp(120px,22%,240px);aspect-ratio:16/9;object-fit:cover;border-radius:10px;border:2px solid #333;background:#111;z-index:3;transform:scaleX(-1)}
 .rec .cam{border-color:var(--red)}
+.scrim{display:none;position:absolute;inset:0;pointer-events:none;background:rgb(0 0 0/var(--scrim,.45))}
+.camfull .cam{top:0;right:0;width:100%;height:100%;aspect-ratio:auto;border:0;border-radius:0;z-index:0}
+.camfull .scrim{display:block;z-index:1}
+.camfull .mirror{z-index:2}
+.camfull .fade{z-index:3;opacity:.55}
+.camfull .guide{z-index:4}
+.camfull .count{z-index:6}
+.camfull .text{text-shadow:0 2px 3px #000,0 0 18px #000c}
+.camfull .glass{background:#000}
+.rec.camfull .glass{box-shadow:inset 0 0 0 4px var(--red)}
 .recb{position:absolute;left:14px;bottom:14px;z-index:3;font:700 14px Archivo,sans-serif;color:#fff;background:#000c;border:1px solid var(--red);border-radius:20px;padding:4px 12px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .recb::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--red);margin-right:7px;vertical-align:1px}
 .bar .btn.recbtn::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--red)}
@@ -142,7 +152,10 @@ body{overflow:auto}
 .stage{order:-1;height:62vh}
 .side{border-right:0;overflow:visible}
 .full .app{grid-template-rows:100svh}.full .stage{height:100svh}
-.clock{margin-left:0;width:100%}
+.bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:8px 10px;gap:6px}.bar::-webkit-scrollbar{display:none}
+.bar .btn{flex:none;min-height:42px;padding:0 12px}
+.clock{margin-left:6px;font-size:14px}
+.app{grid-template-rows:72vh auto}.stage{height:72vh}
 }
 @media(prefers-reduced-motion:reduce){.text p.past{transition:none}.live .tally{box-shadow:none}}
 </style>
@@ -217,7 +230,9 @@ body{overflow:auto}
         <label class="tog"><input type="checkbox" id="audOnly"> Voice only, no video</label>
         <label class="tog"><input type="checkbox" id="ns"> Noise suppression (off sounds more natural)</label>
         <label class="tog"><input type="checkbox" id="withPlay" checked> Start recording when I press Play</label>
-        <label class="tog"><input type="checkbox" id="showCam" checked> Show camera preview</label>
+        <div class="fld"><label for="camView">Camera view</label><select id="camView"><option value="full">Behind the text</option><option value="corner">Corner</option><option value="off">Hidden</option></select></div>
+        <div class="ctl" id="scrimRow"><label for="scrim">Text backdrop</label><input type="range" id="scrim" min="0" max="85" step="5"><output id="scrimO"></output></div>
+        <p class="hint" id="camTip">With the camera behind the text, set the reading line near the top so your eyes stay close to the lens. A stronger backdrop makes the words easier to read.</p>
         <label class="tog" id="upL" hidden><input type="checkbox" id="upload" checked> Upload each take to my takes library</label>
         <label class="tog" id="toFileL" hidden><input type="checkbox" id="toFile"> Save straight to a file while recording (best for long takes)</label>
         <p class="hint" id="camInfo"></p>
@@ -245,6 +260,7 @@ body{overflow:auto}
         <kbd>+ −</kbd><span>Text size</span>
         <kbd>Home</kbd><span>Back to the top</span>
         <kbd>R</kbd><span>Start or stop recording</span>
+        <kbd>C</kbd><span>Camera: behind text, corner or hidden</span>
         <kbd>V</kbd><span>Voice follow on or off</span>
         <kbd>M</kbd><span>Mirror</span>
         <kbd>F</kbd><span>Prompter only</span>
@@ -259,6 +275,7 @@ body{overflow:auto}
     <div class="bar">
       <button class="btn red" id="play">Play</button>
       <button class="btn recbtn" id="recBtn">Record</button>
+      <button class="btn" id="camBtn" title="Show yourself behind the text">Camera</button>
       <button class="btn" id="voice" hidden title="Scroll as you speak">Follow my voice</button>
       <button class="btn" id="reset">Top</button>
       <button class="btn" id="slow" aria-label="Slower">−</button>
@@ -269,6 +286,7 @@ body{overflow:auto}
       <span class="clock"><b id="el">0:00</b> elapsed · <span id="left">0:00</span> left</span>
     </div>
     <div class="glass" id="glass">
+      <div class="scrim"></div>
       <div class="mirror"><div class="text" id="text"></div></div>
       <div class="fade t"></div><div class="fade b"></div>
       <div class="guide" id="guide"></div>
@@ -312,7 +330,7 @@ const sample=[
  {id:'s1',scope:'me',title:'Quarterly update, opening',body:"Good morning, everyone, and thank you for joining.\n\nThis quarter we set out to do three things: ship the new onboarding, cut support wait times in half, and open our first office in Nairobi. [PAUSE]\n\nI'm glad to say we did *all three*.\n\nOnboarding went live in September. Since then, new teams reach their first finished project in two days instead of five.\n\nSupport wait times fell from eleven minutes to four. That is the work of a team that grew by only two people. [LOOK AT CAMERA]\n\nAnd last month we opened the doors in Nairobi, with fourteen colleagues who are already serving customers across East Africa.\n\nIn the next twenty minutes I'll walk you through what worked, what didn't, and where we go next. [CLICK, SLIDE 2]\n\nLet's start with the numbers."},
  {id:'s2',scope:'me',title:'Product video intro',body:"Meet SomaPrompt. [SMILE]\n\nA teleprompter that lives in your browser.\n\nPaste your script, press play, and look straight into the lens while your words roll past at exactly your pace.\n\nMirror it for glass rigs. Drive it from your phone. *No installs.*\n\n[PAUSE]\n\nJust you, your message, and the camera."}
 ];
-const defSet={ofx:false,ofy:false,wpm:150,size:64,width:80,guide:35,cd:3,fx:false,fy:false,dim:true};
+const defSet={cam:'full',scrim:45,ofx:false,ofy:false,wpm:150,size:64,width:80,guide:35,cd:3,fx:false,fy:false,dim:true};
 let st;
 const lsGet=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
@@ -381,7 +399,7 @@ function renderCtl(){
   $('fx').checked=st.set.fx;$('fy').checked=st.set.fy;$('dim').checked=st.set.dim;$('ofx').checked=st.set.ofx;$('ofy').checked=st.set.ofy;
   $('stage').classList.toggle('flipx',st.set.fx);$('stage').classList.toggle('flipy',st.set.fy);
   const t=$('text');t.style.fontSize=st.set.size+'px';t.style.width=st.set.width+'%';
-  layout();outScript();
+  applyCamView();layout();outScript();
 }
 let gH=0,tH=0,gY=0;
 function layout(){
@@ -653,12 +671,12 @@ async function openCam(){
     else camMsg('The camera could not start: '+e.message);
     return false;
   }
-  $('cam').srcObject=stream;$('cam').hidden=ao||!$('showCam').checked;
+  $('cam').srcObject=stream;applyCamView();
   const v=stream.getVideoTracks()[0]?.getSettings()||{},a=stream.getAudioTracks()[0]?.getSettings()||{};
   camMsg((ao?'Voice only':`Camera ${v.width||'?'}×${v.height||'?'} at ${Math.round(v.frameRate||0)} fps`)+` · microphone ${a.sampleRate?Math.round(a.sampleRate/1000)+' kHz':'on'}${a.channelCount>1?' stereo':''} · saves as ${extOf(pickMime(ao),ao).toUpperCase()}`);
   $('camOn').textContent='Turn off camera and mic';fillDevices();return true;
 }
-function closeCam(){if(recr)return;stream?.getTracks().forEach(t=>t.stop());stream=null;$('cam').hidden=true;$('cam').srcObject=null;$('camOn').textContent='Turn on camera and mic';camMsg('')}
+function closeCam(){if(recr)return;stream?.getTracks().forEach(t=>t.stop());stream=null;$('cam').srcObject=null;applyCamView();$('camOn').textContent='Turn on camera and mic';camMsg('')}
 async function startRec(byPlay){
   if(recr)return;
   const ao=$('audOnly').checked;let mime=pickMime(ao);
@@ -705,7 +723,23 @@ $('takes').addEventListener('click',e=>{
 $('recBtn').onclick=toggleRec;
 $('camOn').onclick=()=>stream?closeCam():openCam();
 for(const id of ['camSel','micSel','qual','fps','audOnly','ns'])$(id).addEventListener('change',()=>{if(stream&&!recr)openCam()});
-$('showCam').onchange=()=>{$('cam').hidden=!stream||$('audOnly').checked||!$('showCam').checked};
+function applyCamView(){
+  const v=st.set.cam||'full',has=!!stream&&stream.getVideoTracks().length>0;
+  $('cam').hidden=!has||v==='off';
+  $('stage').classList.toggle('camfull',has&&v==='full');
+  $('stage').style.setProperty('--scrim',(st.set.scrim??45)/100);
+  $('camView').value=v;$('scrim').value=st.set.scrim??45;$('scrimO').textContent=(st.set.scrim??45)+'%';
+  $('scrimRow').hidden=$('camTip').hidden=v!=='full';
+  $('camBtn').classList.toggle('on',has&&v!=='off');
+  $('camBtn').textContent=!has?'Camera':v==='full'?'Camera: behind text':v==='corner'?'Camera: corner':'Camera: hidden';
+}
+function cycleCam(){
+  if(!stream){if(st.set.cam==='off')st.set.cam='full';saveSet();openCam();return}
+  st.set.cam=st.set.cam==='full'?'corner':st.set.cam==='corner'?'off':'full';saveSet();applyCamView();
+}
+$('camBtn').onclick=cycleCam;
+$('camView').onchange=e=>{st.set.cam=e.target.value;saveSet();applyCamView()};
+$('scrim').oninput=e=>{st.set.scrim=+e.target.value;saveSet();applyCamView()};
 $('toFileL').hidden=!window.showSaveFilePicker;
 Promise.resolve(window.cueTakes?.ready).then(ok=>{$('upL').hidden=!ok}).catch(()=>{});
 if(blocked())$('recBlock').hidden=false;
@@ -876,6 +910,7 @@ document.addEventListener('keydown',e=>{
   else if(k==='Home'){e.preventDefault();toTop()}
   else if(k==='v'||k==='V')toggleVoice();
   else if(k==='r'||k==='R')toggleRec();
+  else if(k==='c'||k==='C')cycleCam();
   else if(k==='m'||k==='M')$('mir').click();
   else if(k==='f'||k==='F')$('full').click();
   else if(k==='o'||k==='O')openOutput();
