@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS takes(id TEXT PRIMARY KEY, owner TEXT NOT NULL REFERE
 CREATE INDEX IF NOT EXISTS takes_owner ON takes(owner);
 CREATE INDEX IF NOT EXISTS takes_ws ON takes(workspace, shared);
 `);
+// Older databases: add the captions columns if they are missing.
+for (const col of ['vtt', 'srt']) { if (!db.prepare('PRAGMA table_info(takes)').all().some((c) => c.name === col)) db.exec(`ALTER TABLE takes ADD COLUMN ${col} TEXT`); }
 const TAKES_DIR = path.join(DATA, 'takes');
 fs.mkdirSync(TAKES_DIR, { recursive: true });
 const TAKES_QUOTA = Math.round((+process.env.CUE_TAKES_QUOTA_GB || 20) * 1e9);
@@ -74,6 +76,7 @@ const q = {
   takesList: db.prepare(`SELECT t.*, u.name AS byName FROM takes t JOIN users u ON u.id = t.owner
     WHERE t.owner = ? OR (t.shared = 1 AND t.workspace = ?) ORDER BY t.created DESC LIMIT 500`),
   takesOf: db.prepare('SELECT id FROM takes WHERE owner = ?'),
+  takeCaps: db.prepare('UPDATE takes SET vtt = ?, srt = ? WHERE id = ?'),
 };
 
 /* ---------- helpers ---------- */
@@ -246,7 +249,7 @@ async function api(req, res, url) {
 const MIME_OK = /^(video|audio)\/(mp4|webm|ogg|x-matroska)(;[\w=.,\s-]*)?$/;
 const takeFile = (id) => path.join(TAKES_DIR, id + '.bin');
 const canSee = (t, u) => t && (t.owner === u.id || (t.shared && t.workspace === u.workspace));
-const takeOut = (t, u) => ({ id: t.id, name: t.name, script: t.script, mime: t.mime, size: t.size, dur: t.dur, complete: !!t.complete, shared: !!t.shared, created: t.created, by: t.byName || '', mine: t.owner === u.id });
+const takeOut = (t, u) => ({ id: t.id, name: t.name, script: t.script, mime: t.mime, size: t.size, dur: t.dur, complete: !!t.complete, shared: !!t.shared, created: t.created, by: t.byName || '', mine: t.owner === u.id, captions: !!t.vtt });
 async function readRaw(req, limit) {
   let size = 0; const chunks = [];
   for await (const c of req) { size += c.length; if (size > limit) throw Object.assign(new Error('Chunk too large.'), { status: 413 }); chunks.push(c); }
@@ -292,7 +295,23 @@ async function takesApi(req, res, url, u) {
     if (req.method === 'HEAD') return res.end();
     return fs.createReadStream(takeFile(t.id)).pipe(res);
   }
+  if (act === '/captions' && req.method === 'GET') {
+    const fmt = url.searchParams.get('format') === 'srt' ? 'srt' : 'vtt';
+    const body = t[fmt];
+    if (!body) return send(res, 404, { error: 'This take has no captions.' });
+    const base = (t.name.replace(/[^\w .-]+/g, '').trim() || 'take').replace(/\.(mp4|m4a|webm)$/i, '');
+    res.writeHead(200, { 'Content-Type': fmt === 'srt' ? 'application/x-subrip; charset=utf-8' : 'text/vtt; charset=utf-8', 'Cache-Control': 'private, no-cache', 'X-Content-Type-Options': 'nosniff',
+      ...(url.searchParams.has('dl') ? { 'Content-Disposition': `attachment; filename="${base}.${fmt}"` } : {}) });
+    return res.end(body);
+  }
   if (t.owner !== u.id) return send(res, 403, { error: 'Only the person who recorded this take can change it.' });
+  if (act === '/captions' && req.method === 'POST') {
+    const b = await readJson(req, 2 << 20);
+    const vtt = String(b.vtt || ''), srt = String(b.srt || '');
+    if (!vtt.startsWith('WEBVTT') || vtt.length > 1e6 || srt.length > 1e6) return send(res, 400, { error: 'Captions are not valid.' });
+    q.takeCaps.run(vtt, srt, t.id);
+    return send(res, 200, { ok: true });
+  }
 
   if (act === '/chunk' && req.method === 'PUT') {
     if (t.complete) return send(res, 409, { error: 'This take is already finished.', size: t.size });

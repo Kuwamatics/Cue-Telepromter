@@ -8,11 +8,14 @@ A self-hosted teleprompter platform for presenters and teams.
 - **Import:** Word (.docx), text and Markdown files. Bold words in Word come through highlighted.
 - **See yourself while reading:** your camera fills the prompter with the script scrolling over it, like a selfie teleprompter, with an adjustable backdrop so the words stay readable. You can also use a corner preview or hide the camera.
 - **Recording:** records video up to 4K at 24, 30 or 60 fps with 48 kHz voice, in the background while you read. Saves MP4 in current Chrome and Edge, otherwise WebM. Can write straight to disk for long takes.
+- **Auto captions:** every take gets captions timed to your reading, downloadable as .srt and shown in the library player. Speaker names, cues and headings are left out.
+- **Script structure:** `# Heading` lines become sections you can jump to, with a time for each. Speaker names in capitals (`ANNA:`) get their own colour. Use **Finish in** to set the speed so the script ends right on time.
+- **Readability:** four fonts (Atkinson Hyperlegible, Lexend, Inter, Literata), white, yellow or black-on-white text, adjustable line spacing, and bionic reading.
 - **Takes library:** takes upload to your server while you record, so you can play, download or share them from any device. Uploads resume after a dropped connection.
 - **Accounts and sync:** scripts follow you across devices and update live.
 - **Teams:** share scripts with your team. People join with an invite code.
 - **Phone remote:** pair a phone with a 4-character code to play, pause, skip, change speed and start recording.
-- **Voice follow:** the text scrolls as you speak (Chrome, Edge and Safari).
+- **Voice follow:** the text scrolls as you speak, in 50 languages including Kiswahili. It has no daily time limit. If you improvise it waits for you, and if you skip ahead it finds your place (Chrome, Edge and Safari).
 - **Script assistant:** tighten a script, make it conversational, add delivery cues, cut it to 60 seconds, or draft one from a brief. Needs an Anthropic API key.
 - **Installable:** works as an app on phones and desktops (PWA).
 
@@ -67,6 +70,18 @@ Keep `/data` on a persistent volume. That is where the database lives.
 | `CUE_ALLOW_SIGNUP` | `0` stops new sign-ups | `1` |
 | `CUE_SECURE` | `1` always marks the session cookie Secure | `0` |
 | `CUE_TAKES_QUOTA_GB` | Takes storage per person, in GB | `20` |
+
+## Owner tools
+
+Run these on the server. On Render, open your service and choose **Shell**.
+
+```bash
+node tools/admin.mjs users                          # list accounts and teams
+node tools/admin.mjs reset-password EMAIL           # set a new random password and print it
+node tools/admin.mjs reset-password EMAIL NEWPASS   # set one you choose
+```
+
+Resetting a password signs that person out everywhere.
 
 ## Back up
 

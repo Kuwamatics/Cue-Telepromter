@@ -155,8 +155,29 @@ test('takes upload in chunks, survive retries, stream with ranges and share with
   assert.equal((await B.call(`/api/takes/${id}/delete`, {})).status, 403, 'teammates cannot delete');
   const dl = await fetch(`${BASE}/api/takes/${id}/file?dl=1`, { headers: { cookie: B.cookie() } });
   assert.match(dl.headers.get('content-disposition'), /attachment; filename="Opening take 1.mp4"/);
+  const vtt = 'WEBVTT\n\n00:00:00.000 --> 00:00:01.500\nGood morning, everyone.\n';
+  const srt = '1\n00:00:00,000 --> 00:00:01,500\nGood morning, everyone.\n';
+  assert.equal((await B.call(`/api/takes/${id}/captions`, { vtt, srt })).status, 403, 'teammates cannot replace captions');
+  assert.equal((await A.call(`/api/takes/${id}/captions`, { vtt: 'nope', srt })).status, 400);
+  assert.equal((await A.call(`/api/takes/${id}/captions`, { vtt, srt })).status, 200);
+  assert.equal((await B.call('/api/takes')).body.takes[0].captions, true);
+  const cv = await fetch(`${BASE}/api/takes/${id}/captions`, { headers: { cookie: B.cookie() } });
+  assert.match(cv.headers.get('content-type'), /text\/vtt/); assert.equal(await cv.text(), vtt);
+  const cs = await fetch(`${BASE}/api/takes/${id}/captions?format=srt&dl=1`, { headers: { cookie: A.cookie() } });
+  assert.match(cs.headers.get('content-disposition'), /filename="Opening take 1.srt"/); assert.equal(await cs.text(), srt);
   assert.equal((await A.call(`/api/takes/${id}/delete`, {})).status, 200);
   assert.equal((await A.call('/api/takes')).body.takes.length, 0);
+});
+
+test('owner tool resets a password and signs the person out', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const run = (...a) => execFileSync(process.execPath, ['--no-warnings', 'tools/admin.mjs', ...a], { cwd: ROOT, env: { ...process.env, CUE_DATA: dataDir }, encoding: 'utf8' });
+  assert.match(run('users'), /brian@example\.com/);
+  assert.match(run('reset-password', 'Brian@Example.com', 'brand new pass'), /is now: brand new pass/);
+  assert.equal((await B.call('/api/me')).status, 401, 'old session ended');
+  const C = client();
+  assert.equal((await C.call('/api/login', { email: 'brian@example.com', password: 'another pass' })).status, 401);
+  assert.equal((await C.call('/api/login', { email: 'brian@example.com', password: 'brand new pass' })).status, 200);
 });
 
 test('sign out ends the session', async () => {

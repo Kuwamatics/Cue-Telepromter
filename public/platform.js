@@ -215,7 +215,7 @@
         return new Promise((resolve, reject) => {
           want = true;
           rec = new SR();
-          rec.continuous = true; rec.interimResults = true; rec.lang = navigator.language || 'en-US';
+          rec.continuous = true; rec.interimResults = true; rec.lang = window.cueSpeechLang || navigator.language || 'en-US';
           let started = false;
           rec.onstart = () => { started = true; emit(state, { state: 'listening' }); resolve(); };
           rec.onresult = (e) => {
@@ -291,6 +291,7 @@
     const u = {
       id, state: 'uploading', sent: 0, error: '', onProgress: null,
       push(b) { queue.push(b); pump(); },
+      captions: (vtt, srt) => api(`/api/takes/${id}/captions`, { vtt, srt }).catch(() => {}),
       async finish(dur) {
         while ((busy || queue.length) && u.state === 'uploading') await sleep(200);
         if (u.state !== 'uploading') throw new Error(u.error);
@@ -341,7 +342,10 @@
       player.addEventListener('close', () => { const v = $('video', player); v.pause(); v.removeAttribute('src'); v.load(); });
     }
     $('b', player).textContent = t.name;
-    $('video', player).src = `/api/takes/${t.id}/file`;
+    const v = $('video', player);
+    v.querySelectorAll('track').forEach((x) => x.remove());
+    if (t.captions) { const tr = document.createElement('track'); tr.kind = 'captions'; tr.label = 'Captions'; tr.srclang = 'en'; tr.default = true; tr.src = `/api/takes/${t.id}/captions`; v.appendChild(tr); }
+    v.src = `/api/takes/${t.id}/file`;
     player.showModal();
     $('video', player).play().catch(() => {});
   }
@@ -360,6 +364,7 @@
           <div class="row" style="flex:none;gap:2px">
             <button class="btn ghost" data-play="${t.id}">Play</button>
             <a class="btn ghost" href="/api/takes/${t.id}/file?dl=1">Save</a>
+            ${t.captions ? `<a class="btn ghost" href="/api/takes/${t.id}/captions?format=srt&dl=1" title="Captions timed to your reading (.srt)">Captions</a>` : ''}
             ${t.mine ? `<button class="btn ghost" data-share="${t.id}">${t.shared ? 'Unshare' : 'Share'}</button><button class="btn ghost" data-delt="${t.id}">${confirmId === t.id ? 'Confirm delete' : 'Delete'}</button>` : ''}
           </div></div>`).join('') + '</div>'
           : '<p class="hint">Takes you record while signed in upload here, so you can play and download them on any device. Share a take to let your team see it.</p>');
