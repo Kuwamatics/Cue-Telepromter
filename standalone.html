@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cue Teleprompter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* VOICE work tool for presenters, calm and exact, studio-grade
+   IDEA a broadcast prompter: black beam-splitter glass, white type, a red tally light when live
+   PICTURE the live prompter screen itself, scrolling past a reading line with cue arrows
+   COLOUR glass black #050505, white ink, tally red #ff2b2b, panel graphite; editor follows theme
+   TYPE Atkinson Hyperlegible for script + Archivo for interface
+   LAYOUT laptop: script panel left 360px, prompter fills the rest; phone: prompter on top, panel below; #remote: one-column clicker */
+:root{color-scheme:light dark;--bg:light-dark(#f4f4f2,#121212);--panel:light-dark(#ffffff,#1b1b1b);--ink:light-dark(#111,#eee);--mute:light-dark(#5f5f5f,#a3a3a3);--line:light-dark(#dcdcd8,#2e2e2e);--red:#ff2b2b;--glass:#050505}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Archivo,system-ui,sans-serif;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+[hidden]{display:none!important}
+.app{display:grid;grid-template-columns:360px minmax(0,1fr);height:100%}
+.side{display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--line);overflow:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:18px 18px 10px}
+.brand h1{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:0;line-height:1.05}
+.sync{margin-left:auto;font-size:13px;color:var(--mute);white-space:nowrap}
+.tally{width:12px;height:12px;border-radius:50%;background:#555;flex:none;box-shadow:0 0 0 3px color-mix(in srgb,#555 25%,transparent)}
+.live .tally{background:var(--red);box-shadow:0 0 0 3px color-mix(in srgb,var(--red) 30%,transparent),0 0 14px var(--red)}
+.sec{padding:10px 18px;border-top:1px solid var(--line)}
+.sec h2,.sec summary{font-size:13px;font-weight:600;color:var(--mute);margin:4px 0 8px}
+details.sec summary{cursor:pointer;min-height:32px;display:flex;align-items:center;list-style-position:inside}
+details.sec[open] summary{margin-bottom:8px}
+.grp{font-size:13px;color:var(--mute);margin:10px 0 4px;display:flex;gap:8px;align-items:baseline}
+.lib{display:flex;flex-direction:column;gap:2px}
+.item{display:flex;align-items:center;gap:6px}
+.item button.pick{flex:1;text-align:left;padding:8px 12px;border-radius:8px;border:1px solid transparent;background:none;cursor:pointer;min-height:44px;display:flex;flex-direction:column;justify-content:center}
+.item button.pick span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item button.pick em{font-style:normal;font-size:13px;color:var(--mute)}
+.item button.pick:hover{background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.item.on button.pick{border-color:var(--line);background:color-mix(in srgb,var(--red) 9%,transparent);font-weight:600}
+.item small{color:var(--mute);font-size:13px;white-space:nowrap}
+.empty{font-size:14px;color:var(--mute);padding:6px 12px}
+.btn{min-height:44px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:hover{border-color:var(--mute)}
+.btn:disabled{opacity:.45;cursor:default}
+a.btn{text-decoration:none;color:inherit}
+.btn.ghost{border-color:transparent;background:none;color:var(--mute);padding:0 10px}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff}
+.btn.on{border-color:var(--red);color:var(--red)}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input[type=text],textarea{width:100%;font-size:16px;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:10px 12px}
+textarea{min-height:200px;resize:vertical;line-height:1.5;font-family:"Atkinson Hyperlegible",system-ui,sans-serif}
+.hint{font-size:13px;color:var(--mute);margin:6px 0 0}
+.ctl{display:grid;grid-template-columns:7.5em minmax(0,1fr) 4.8em;align-items:center;gap:10px;margin:4px 0}
+.ctl label{font-size:14px}
+.ctl output{font-size:14px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+input[type=range]{width:100%;accent-color:var(--red);height:40px}
+.tog{display:flex;align-items:center;gap:8px;font-size:14px;min-height:36px;cursor:pointer}
+.tog input{width:18px;height:18px;accent-color:var(--red)}
+.keys{font-size:13px;color:var(--mute);display:grid;grid-template-columns:auto 1fr;gap:4px 10px}
+kbd{font:600 12px Archivo,sans-serif;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;white-space:nowrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips .btn{min-height:38px;font-size:14px;padding:0 12px}
+.preview{margin-top:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:10px 12px;font:15px/1.5 "Atkinson Hyperlegible",sans-serif;white-space:pre-wrap;max-height:260px;overflow:auto}
+.code{font:800 34px/1 Archivo,sans-serif;letter-spacing:.12em;padding:10px 0;font-variant-numeric:tabular-nums}
+.msg{font-size:13px;margin:6px 0 0;color:var(--red)}
+/* prompter */
+.stage{position:relative;background:var(--glass);color:#fff;overflow:hidden;display:flex;flex-direction:column}
+.bar{position:relative;z-index:3;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:#000;border-bottom:1px solid #222}
+.bar .btn{background:#151515;border-color:#333;color:#fff}
+.bar .btn:hover{border-color:#777}
+.bar .btn.red{background:var(--red);border-color:var(--red)}
+.bar .btn.on{border-color:var(--red);color:#fff;background:#3a0b0b}
+.clock{font:600 15px Archivo,sans-serif;font-variant-numeric:tabular-nums;color:#bbb;white-space:nowrap;margin-left:auto}
+.clock b{color:#fff}
+.glass{position:relative;flex:1;overflow:hidden;cursor:grab;touch-action:none}
+.glass.drag{cursor:grabbing}
+.mirror{position:absolute;inset:0}
+.flipx .mirror{transform:scaleX(-1)}.flipy .mirror{transform:scaleY(-1)}.flipx.flipy .mirror{transform:scale(-1,-1)}
+.text{position:absolute;left:0;right:0;top:0;margin:0 auto;font-family:"Atkinson Hyperlegible",system-ui,sans-serif;font-weight:700;line-height:1.35;will-change:transform;padding:0 24px}
+.text p{margin:0 0 .7em}
+.text .cue{color:var(--red);font-size:.6em;font-family:Archivo,sans-serif;font-weight:800;display:inline-block;border:2px solid var(--red);border-radius:6px;padding:0 .35em;vertical-align:.2em}
+.text .em{color:#ffe14d}
+.text .w.now{text-decoration:underline var(--red) .12em;text-underline-offset:.15em}
+.text p.past{opacity:.38;transition:opacity .4s}
+.guide{position:absolute;left:0;right:0;height:0;border-top:1px dashed #ffffff30;pointer-events:none;z-index:2}
+.guide::before,.guide::after{content:"";position:absolute;top:-14px;border:14px solid transparent}
+.guide::before{left:0;border-left:20px solid var(--red)}
+.guide::after{right:0;border-right:20px solid var(--red)}
+.fade{position:absolute;left:0;right:0;height:22%;pointer-events:none;z-index:1}
+.fade.t{top:0;background:linear-gradient(var(--glass),#0000)}.fade.b{bottom:0;background:linear-gradient(#0000,var(--glass))}
+.prog{position:absolute;left:0;bottom:0;height:4px;background:var(--red);z-index:3;width:0}
+.count{position:absolute;inset:0;display:none;place-items:center;font:800 clamp(90px,22vw,220px) Archivo,sans-serif;z-index:4;background:#000c}
+.count.on{display:grid}
+.badge{position:absolute;right:14px;bottom:14px;z-index:3;font:600 13px Archivo,sans-serif;color:#ddd;background:#000b;border:1px solid #333;border-radius:20px;padding:4px 10px}
+.cam{position:absolute;top:14px;right:14px;width:clamp(120px,22%,240px);aspect-ratio:16/9;object-fit:cover;border-radius:10px;border:2px solid #333;background:#111;z-index:3;transform:scaleX(-1)}
+.rec .cam{border-color:var(--red)}
+.recb{position:absolute;left:14px;bottom:14px;z-index:3;font:700 14px Archivo,sans-serif;color:#fff;background:#000c;border:1px solid var(--red);border-radius:20px;padding:4px 12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.recb::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--red);margin-right:7px;vertical-align:1px}
+.bar .btn.recbtn::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--red)}
+.rec .bar .btn.recbtn{background:var(--red);border-color:var(--red)}
+.rec .bar .btn.recbtn::before{background:#fff;border-radius:2px}
+select{width:100%;font-size:16px;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:9px 10px;min-height:44px}
+.fld{display:grid;grid-template-columns:5.5em minmax(0,1fr);gap:10px;align-items:center;margin:6px 0}
+.fld label{font-size:14px}
+.takes{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.take{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:6px 6px 6px 12px}
+.take div{flex:1;font-size:14px;overflow:hidden}.take b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.take span{color:var(--mute);font-size:13px;white-space:nowrap}
+.take a.btn{text-decoration:none;color:inherit;min-height:38px;font-size:14px}
+.full .side{display:none}.full .app{grid-template-columns:1fr}
+.omode .side,.omode .bar,.omode .cam,.omode .recb,.omode .badge{display:none!important}.omode .app{grid-template-columns:1fr}.omode .stage{height:100%}.omode .glass{cursor:default}
+.ohint{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:5;font:600 15px Archivo,sans-serif;color:#ddd;background:#000d;border:1px solid #333;border-radius:24px;padding:8px 16px;white-space:nowrap;pointer-events:none}
+.omode.fs .ohint{display:none}
+.hidebar .bar{opacity:0;transition:opacity .3s}.hidebar .bar:hover,.hidebar .bar:focus-within{opacity:1}
+.note{font-size:13px;color:var(--mute);padding:0 18px 18px}
+/* remote */
+.remote{display:none;height:100%;overflow:auto;background:var(--glass);color:#fff;padding:20px max(16px,4vw)}
+.rmode .app{display:none}.rmode .remote{display:block}.rmode{overflow:auto}
+.remote .wrap{max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.remote header{display:flex;align-items:center;gap:10px}
+.remote h1{font-size:24px;margin:0;font-weight:800;letter-spacing:-.02em}
+.remote header a{margin-left:auto;color:#bbb;font-size:14px}
+.remote label{font-size:14px;color:#bbb}
+.remote input{background:#111;border:1px solid #333;color:#fff;font:800 28px Archivo,sans-serif;letter-spacing:.2em;text-transform:lowercase;text-align:center;padding:10px;border-radius:10px;width:100%}
+.remote .btn{background:#151515;border-color:#333;color:#fff;min-height:64px;font-size:18px;border-radius:14px}
+.remote .btn.red{background:var(--red);border-color:var(--red)}
+.rstat{background:#111;border:1px solid #2a2a2a;border-radius:14px;padding:14px}
+.rstat b{display:block;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rstat .meta{font-size:14px;color:#aaa;font-variant-numeric:tabular-nums}
+.rbar{height:6px;background:#2a2a2a;border-radius:3px;margin-top:10px;overflow:hidden}.rbar i{display:block;height:100%;background:var(--red);width:0}
+.pad{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pad .big{grid-column:1/-1;min-height:120px;font-size:26px}
+@media(max-width:760px){
+body{overflow:auto}
+.app{grid-template-columns:1fr;grid-template-rows:62vh auto;height:auto}
+.stage{order:-1;height:62vh}
+.side{border-right:0;overflow:visible}
+.full .app{grid-template-rows:100svh}.full .stage{height:100svh}
+.clock{margin-left:0;width:100%}
+}
+@media(prefers-reduced-motion:reduce){.text p.past{transition:none}.live .tally{box-shadow:none}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side">
+    <div class="brand"><span class="tally" aria-hidden="true"></span><h1>Cue</h1><span class="sync" id="sync">Saved on this device</span></div>
+
+    <div class="sec">
+      <h2>Scripts</h2>
+      <div class="grp">My scripts</div>
+      <div class="lib" id="libMe"></div>
+      <div id="teamWrap" hidden><div class="grp">Team scripts <span id="teamNote"></span></div><div class="lib" id="libTeam"></div></div>
+      <div class="row" style="margin-top:8px"><button class="btn" id="newS">New script</button><button class="btn ghost" id="dupS">Duplicate</button><button class="btn ghost" id="delS">Delete</button></div>
+      <div class="row" style="margin-top:4px"><button class="btn ghost" id="shareS" hidden>Share with team</button></div>
+      <div class="row" id="undoRow" hidden style="margin-top:6px"><span class="hint" style="margin:0" id="undoMsg">Script deleted.</span><button class="btn ghost" id="undo">Undo</button></div>
+      <p class="msg" id="libMsg" hidden></p>
+    </div>
+
+    <div class="sec">
+      <h2>Edit</h2>
+      <input type="text" id="title" aria-label="Script title">
+      <textarea id="body" aria-label="Script text" style="margin-top:8px"></textarea>
+      <p class="hint" id="stats"></p>
+      <p class="hint">Import a Word (.docx), text or Markdown file. Bold words in Word come through highlighted.</p>
+      <p class="hint">Put cues in square brackets, like <b>[PAUSE]</b>, and they show in red. Wrap words in *stars* to highlight them. Leave a blank line to start a new paragraph.</p>
+      <div class="row" style="margin-top:8px"><label class="btn" for="file">Import a file</label><input type="file" id="file" accept=".txt,.md,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden><button class="btn ghost" id="copy">Copy text</button></div>
+    </div>
+
+    <details class="sec" id="aiSec" open hidden>
+      <summary>Script assistant</summary>
+      <div class="chips" id="aiChips">
+        <button class="btn" data-k="tighten">Tighten</button>
+        <button class="btn" data-k="spoken">Make it conversational</button>
+        <button class="btn" data-k="cues">Add delivery cues</button>
+        <button class="btn" data-k="short">Cut to 60 seconds</button>
+      </div>
+      <div class="row" style="margin-top:8px;flex-wrap:nowrap"><input type="text" id="aiAsk" placeholder="Ask for a change, or describe a script to draft" aria-label="Ask the assistant"><button class="btn" id="aiGo">Go</button></div>
+      <div class="preview" id="aiOut" hidden></div>
+      <div class="row" id="aiAct" hidden style="margin-top:8px"><button class="btn red" id="aiUse">Use this version</button><button class="btn ghost" id="aiDrop">Discard</button></div>
+      <p class="msg" id="aiMsg" hidden></p>
+    </details>
+
+    <details class="sec" open>
+      <summary>Prompter</summary>
+      <div class="ctl"><label for="speed">Speed</label><input type="range" id="speed" min="60" max="300" step="5" aria-describedby="speedH"><output id="speedO"></output></div>
+      <div class="ctl"><label for="size">Text size</label><input type="range" id="size" min="24" max="140" step="2"><output id="sizeO"></output></div>
+      <p class="hint" id="speedH" style="margin:0 0 4px">Speed is your reading pace in words per minute. Most presenters read at 130 to 170. Cues add a short beat, and [PAUSE] a longer one.</p>
+      <div class="ctl"><label for="width">Line width</label><input type="range" id="width" min="40" max="100" step="5"><output id="widthO"></output></div>
+      <div class="ctl"><label for="guideP">Reading line</label><input type="range" id="guideP" min="15" max="60" step="5"><output id="guideO"></output></div>
+      <div class="ctl"><label for="cd">Countdown</label><input type="range" id="cd" min="0" max="10" step="1"><output id="cdO"></output></div>
+      <label class="tog"><input type="checkbox" id="fx"> Mirror horizontally (for beam-splitter glass)</label>
+      <label class="tog"><input type="checkbox" id="fy"> Flip vertically</label>
+      <label class="tog"><input type="checkbox" id="dim"> Dim lines already read</label>
+      <div class="grp">Second screen</div>
+      <label class="tog"><input type="checkbox" id="ofx"> Mirror the second screen horizontally</label>
+      <label class="tog"><input type="checkbox" id="ofy"> Flip the second screen vertically</label>
+      <p class="hint">Second screen opens a window that shows only the scrolling text, for the monitor under your glass. Controls stay here. In Chrome and Edge it moves itself to your external display.</p>
+      <p class="hint">Display settings stay on this device, so each rig keeps its own.</p>
+    </details>
+
+    <details class="sec" id="recSec" open>
+      <summary>Recording</summary>
+      <p class="msg" id="recBlock" hidden>This view blocks the camera and microphone. To record, open the standalone Cue file in Chrome or Edge.</p>
+      <div class="row"><button class="btn" id="camOn">Turn on camera and mic</button></div>
+      <div id="recCfg" style="margin-top:8px">
+        <div class="fld"><label for="camSel">Camera</label><select id="camSel"><option value="">Default camera</option></select></div>
+        <div class="fld"><label for="micSel">Microphone</label><select id="micSel"><option value="">Default microphone</option></select></div>
+        <div class="fld"><label for="qual">Quality</label><select id="qual"><option value="2160">4K (2160p)</option><option value="1440">1440p</option><option value="1080" selected>Full HD (1080p)</option><option value="720">HD (720p)</option></select></div>
+        <div class="fld"><label for="fps">Frame rate</label><select id="fps"><option value="30">30 fps</option><option value="60">60 fps</option><option value="24">24 fps</option></select></div>
+        <label class="tog"><input type="checkbox" id="audOnly"> Voice only, no video</label>
+        <label class="tog"><input type="checkbox" id="ns"> Noise suppression (off sounds more natural)</label>
+        <label class="tog"><input type="checkbox" id="withPlay" checked> Start recording when I press Play</label>
+        <label class="tog"><input type="checkbox" id="showCam" checked> Show camera preview</label>
+        <label class="tog" id="upL" hidden><input type="checkbox" id="upload" checked> Upload each take to my takes library</label>
+        <label class="tog" id="toFileL" hidden><input type="checkbox" id="toFile"> Save straight to a file while recording (best for long takes)</label>
+        <p class="hint" id="camInfo"></p>
+      </div>
+      <div class="takes" id="takes"></div>
+    </details>
+
+    <details class="sec" id="remSec" open>
+      <summary>Phone remote</summary>
+      <div id="remOn" hidden>
+        <div class="row"><span class="code" id="code">----</span><button class="btn ghost" id="newCode">New code</button></div>
+        <p class="hint">On your phone, open this same page in claude.ai, signed in to the same account. Tap <b>Use as remote</b> and enter this code.</p>
+        <p class="hint" id="remCount">No remote connected.</p>
+      </div>
+      <p class="hint" id="remOff">Remote control turns on when this page is opened in claude.ai while you're signed in.</p>
+      <div class="row" style="margin-top:8px"><a class="btn" href="#remote">Use as remote</a></div>
+    </details>
+
+    <details class="sec">
+      <summary>Keyboard and clicker</summary>
+      <div class="keys">
+        <kbd>Space</kbd><span>Play or pause</span>
+        <kbd>↑ ↓</kbd><span>Slower or faster</span>
+        <kbd>← →</kbd><span>Back or forward one paragraph</span>
+        <kbd>+ −</kbd><span>Text size</span>
+        <kbd>Home</kbd><span>Back to the top</span>
+        <kbd>R</kbd><span>Start or stop recording</span>
+        <kbd>V</kbd><span>Voice follow on or off</span>
+        <kbd>M</kbd><span>Mirror</span>
+        <kbd>F</kbd><span>Prompter only</span>
+        <kbd>O</kbd><span>Open the second screen</span>
+      </div>
+      <p class="hint">Most presentation clickers send ← → or Page Up and Page Down, so they move one paragraph at a time. Drag or scroll the screen to scrub.</p>
+    </details>
+    <p class="note" id="foot">The two starter scripts are examples you can edit or delete.</p>
+  </aside>
+
+  <main class="stage" id="stage">
+    <div class="bar">
+      <button class="btn red" id="play">Play</button>
+      <button class="btn recbtn" id="recBtn">Record</button>
+      <button class="btn" id="voice" hidden title="Scroll as you speak">Follow my voice</button>
+      <button class="btn" id="reset">Top</button>
+      <button class="btn" id="slow" aria-label="Slower">−</button>
+      <button class="btn" id="fast" aria-label="Faster">+</button>
+      <button class="btn" id="mir">Mirror</button>
+      <button class="btn" id="full">Prompter only</button>
+      <button class="btn" id="outBtn">Second screen</button>
+      <span class="clock"><b id="el">0:00</b> elapsed · <span id="left">0:00</span> left</span>
+    </div>
+    <div class="glass" id="glass">
+      <div class="mirror"><div class="text" id="text"></div></div>
+      <div class="fade t"></div><div class="fade b"></div>
+      <div class="guide" id="guide"></div>
+      <div class="prog" id="prog"></div>
+      <div class="count" id="count">3</div>
+      <div class="badge" id="badge" hidden></div>
+      <div class="ohint" id="ohint" hidden>Click for full screen. Controls stay in the main Cue window.</div>
+      <video class="cam" id="cam" muted playsinline autoplay hidden></video>
+      <div class="recb" id="recb" hidden>REC 0:00</div>
+    </div>
+  </main>
+</div>
+
+<div class="remote" id="remote">
+  <div class="wrap">
+    <header><span class="tally" aria-hidden="true"></span><h1>Cue remote</h1><a href="#">Back to prompter</a></header>
+    <form id="pairF" class="row" style="flex-wrap:nowrap;align-items:end">
+      <div style="flex:1"><label for="pairIn">Pairing code from the prompter</label><input id="pairIn" maxlength="4" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text"></div>
+      <button class="btn" style="min-height:58px">Connect</button>
+    </form>
+    <p class="hint" id="rMsg" style="color:#bbb">Enter the four-character code shown in the prompter's Phone remote panel.</p>
+    <div class="rstat" id="rStat" hidden><b id="rTitle">Waiting for the prompter…</b><span class="meta" id="rMeta"></span><div class="rbar"><i id="rBar"></i></div></div>
+    <div class="pad" id="pad" hidden>
+      <button class="btn red big" data-a="toggle" id="rPlay">Play</button>
+      <button class="btn" data-a="prev">◀ Back</button>
+      <button class="btn" data-a="next">Forward ▶</button>
+      <button class="btn" data-a="slower">Slower</button>
+      <button class="btn" data-a="faster">Faster</button>
+      <button class="btn" data-a="smaller">Smaller text</button>
+      <button class="btn" data-a="bigger">Bigger text</button>
+      <button class="btn" data-a="top">Back to top</button>
+      <button class="btn" data-a="rec" id="rRec">● Record</button>
+    </div>
+  </div>
+</div>
+
+<script>
+{
+const $=id=>document.getElementById(id);
+const sample=[
+ {id:'s1',scope:'me',title:'Quarterly update, opening',body:"Good morning, everyone, and thank you for joining.\n\nThis quarter we set out to do three things: ship the new onboarding, cut support wait times in half, and open our first office in Nairobi. [PAUSE]\n\nI'm glad to say we did *all three*.\n\nOnboarding went live in September. Since then, new teams reach their first finished project in two days instead of five.\n\nSupport wait times fell from eleven minutes to four. That is the work of a team that grew by only two people. [LOOK AT CAMERA]\n\nAnd last month we opened the doors in Nairobi, with fourteen colleagues who are already serving customers across East Africa.\n\nIn the next twenty minutes I'll walk you through what worked, what didn't, and where we go next. [CLICK, SLIDE 2]\n\nLet's start with the numbers."},
+ {id:'s2',scope:'me',title:'Product video intro',body:"Meet Cue. [SMILE]\n\nA teleprompter that lives in your browser.\n\nPaste your script, press play, and look straight into the lens while your words roll past at exactly your pace.\n\nMirror it for glass rigs. Drive it from your phone. *No installs.*\n\n[PAUSE]\n\nJust you, your message, and the camera."}
+];
+const defSet={ofx:false,ofy:false,wpm:150,size:64,width:80,guide:35,cd:3,fx:false,fy:false,dim:true};
+let st;
+const lsGet=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const newId=()=>'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+let pos=0,target=0,playing=false,voiceOn=false,looping=false,last=0,elapsed=0,cdTimer=null,lastDeleted=null;
+let db=null,user=null,uid=null,canTeam=false,cloud=false;
+const dirty=new Set(),timers={},chains={};
+const names={};
+const cur=()=>st.scripts.find(s=>s.id===st.cur)||st.scripts[0];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const words=t=>(t.replace(/\[[^\]]*\]/g,'').match(/\S+/g)||[]).length;
+const fmt=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const fmtMin=s=>s<60?Math.round(s)+' sec':(s/60).toFixed(1).replace('.0','')+' min';
+const norm=w=>w.toLowerCase().replace(/[^\p{L}\p{N}']/gu,'').replace(/'/g,'');
+const setSync=t=>{$('sync').textContent=t};
+const flash=(id,t)=>{const m=$(id);m.textContent=t;m.hidden=!t};
+
+/* ---------- library ---------- */
+function itemHtml(s){
+  const by=s.scope==='team'&&s.by?`<em>${s.by===uid?'You':esc(names[s.by]||'Teammate')}</em>`:'';
+  return `<div class="item${s.id===st.cur?' on':''}"><button class="pick" data-id="${esc(s.id)}"><span>${esc(s.title||'Untitled')}</span>${by}</button><small>${fmtMin(words(s.body)/(st.set.wpm||150)*60)}</small></div>`;
+}
+function renderLib(){
+  const sort=a=>a.sort((x,y)=>(y.updated||0)-(x.updated||0));
+  const me=sort(st.scripts.filter(s=>s.scope!=='team')),team=sort(st.scripts.filter(s=>s.scope==='team'));
+  $('libMe').innerHTML=me.length?me.map(itemHtml).join(''):'<div class="empty">No scripts yet.</div>';
+  $('teamWrap').hidden=!cloud;
+  $('libTeam').innerHTML=team.length?team.map(itemHtml).join(''):'<div class="empty">Nothing shared yet. Open one of your scripts and choose Share with team.</div>';
+  $('teamNote').textContent=cloud&&!canTeam?'(view only)':'';
+  const c=cur();const ro=c&&c.scope==='team'&&!canTeam;
+  $('shareS').hidden=!cloud||!c||(!canTeam);
+  $('shareS').textContent=c&&c.scope==='team'?'Move to my scripts':'Share with team';
+  $('title').readOnly=$('body').readOnly=!!ro;$('delS').disabled=!!ro;
+  const ids=[...new Set(team.map(s=>s.by).filter(b=>b&&!(b in names)))];
+  if(ids.length&&user?.profiles)user.profiles(ids).then(ps=>{let ch=false;for(const i of ids){names[i]=ps?.[i]?.name||'';ch=true}if(ch)renderLib()}).catch(()=>{});
+}
+function renderEditor(){const s=cur();$('title').value=s?.title||'';$('body').value=s?.body||'';stats()}
+function stats(){const w=words(cur()?.body||'');$('stats').textContent=`${w} words · about ${fmtMin(w/st.set.wpm*60)} at ${st.set.wpm} words a minute`}
+
+/* ---------- prompter text ---------- */
+let W=[],wi=-1;
+function renderText(){
+  const s=cur();const body=s?.body||'';
+  const paras=body.split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean);
+  W=[];let n=0;
+  const word=(w,cls)=>{const k=norm(w);if(!k)return esc(w);W.push({n:k});return `<span class="w${cls?' '+cls:''}" data-i="${n++}">${esc(w)}</span>`};
+  const html=paras.map(p=>{
+    let out='';const re=/\[([^\]]+)\]|\*([^*]+)\*|(\n)|(\s+)|([^\s\[*]+|[\[*])/g;let m;
+    while((m=re.exec(p))){
+      if(m[1]!==undefined)out+=`<span class="cue">${esc(m[1])}</span>`;
+      else if(m[2]!==undefined)out+=m[2].split(/(\s+)/).map(t=>/\s/.test(t)||!t?t:word(t,'em')).join('');
+      else if(m[3])out+='<br>';
+      else if(m[4])out+=' ';
+      else out+=word(m[5]);
+    }
+    return '<p>'+out+'</p>';
+  }).join('');
+  $('text').innerHTML=html||'<p style="opacity:.5">This script is empty. Type or paste it in the editor.</p>';
+  const spans=$('text').querySelectorAll('.w');spans.forEach((el,i)=>{W[i].el=el});
+  wi=-1;layout();outScript();
+}
+function renderCtl(){
+  $('speed').value=st.set.wpm;for(const k of ['size','width','cd'])$(k).value=st.set[k];
+  $('guideP').value=st.set.guide;
+  $('speedO').textContent=st.set.wpm+' wpm';$('sizeO').textContent=st.set.size+'px';$('widthO').textContent=st.set.width+'%';$('guideO').textContent=st.set.guide+'%';$('cdO').textContent=st.set.cd?st.set.cd+' s':'Off';
+  $('fx').checked=st.set.fx;$('fy').checked=st.set.fy;$('dim').checked=st.set.dim;$('ofx').checked=st.set.ofx;$('ofy').checked=st.set.ofy;
+  $('stage').classList.toggle('flipx',st.set.fx);$('stage').classList.toggle('flipy',st.set.fy);
+  const t=$('text');t.style.fontSize=st.set.size+'px';t.style.width=st.set.width+'%';
+  layout();outScript();
+}
+let gH=0,tH=0,gY=0;
+function layout(){
+  const g=$('glass');gH=g.clientHeight;gY=gH*st.set.guide/100;
+  $('guide').style.top=gY+'px';
+  const t=$('text');t.style.paddingTop=gY+'px';t.style.paddingBottom=(gH-gY)+'px';
+  tH=t.scrollHeight;buildMap();
+  pos=M.total?clamp(yAt(wc)-gY):Math.min(pos,maxPos());target=pos;paint();
+}
+/* Word clock: wc counts words read (cues weigh 2, [PAUSE] 4). Lines are mapped so the
+   text moves smoothly and words cross the reading line at exactly the chosen pace. */
+let M={tops:[],cum:[],w:[],total:0,lh:1},wc=0;
+function buildMap(){
+  const els=$('text').querySelectorAll('.w,.cue');const lh=st.set.size*1.35;const tops=[],cum=[],w=[];let c=0;
+  for(const el of els){
+    const t=el.offsetTop,wt=el.classList.contains('cue')?(/pause|stop|wait/i.test(el.textContent)?4:2):1;
+    if(!tops.length||t-tops[tops.length-1]>lh*0.5){tops.push(t);cum.push(c);w.push(0)}
+    w[w.length-1]+=wt;c+=wt;
+  }
+  M={tops,cum,w,total:c,lh};wc=Math.min(wc,c);
+}
+function lineAt(arr,v){let lo=0,hi=arr.length-1,r=0;while(lo<=hi){const m=(lo+hi)>>1;if(arr[m]<=v){r=m;lo=m+1}else hi=m-1}return r}
+const nextTop=L=>L+1<M.tops.length?M.tops[L+1]:M.tops[L]+M.lh;
+function yAt(c){if(!M.tops.length)return 0;const L=lineAt(M.cum,c);return M.tops[L]+Math.min(1,(c-M.cum[L])/M.w[L])*(nextTop(L)-M.tops[L])}
+function cAt(y){if(!M.tops.length||y<M.tops[0])return 0;const L=lineAt(M.tops,y);return Math.min(M.total,M.cum[L]+Math.max(0,Math.min(1,(y-M.tops[L])/(nextTop(L)-M.tops[L])))*M.w[L])}
+const syncWc=()=>{wc=cAt(pos+gY)};
+const secsLeft=()=>Math.max(0,M.total-wc)/st.set.wpm*60;
+const maxPos=()=>Math.max(0,tH-gH);
+const clamp=v=>Math.min(maxPos(),Math.max(0,v));
+function paint(){
+  $('text').style.transform=`translateY(${-pos}px)`;
+  const m=maxPos();$('prog').style.width=(m?pos/m*100:0)+'%';
+  $('el').textContent=fmt(elapsed);$('left').textContent=fmt(secsLeft());
+  for(const p of $('text').children)p.classList.toggle('past',st.set.dim&&p.offsetTop+p.offsetHeight<pos+gY-4);
+  outPos();
+}
+function tick(t){
+  const dt=Math.min(.1,(t-last)/1000);last=t;
+  if(playing){wc+=st.set.wpm/60*dt;elapsed+=dt;pos=clamp(yAt(wc)-gY);if(wc>=M.total){wc=M.total;stop();if(recr&&recByPlay)setTimeout(()=>{if(recByPlay)stopRec()},1500)}}
+  else if(voiceOn){pos+=(target-pos)*Math.min(1,dt*5);elapsed+=dt;syncWc()}
+  paint();
+  if(playing||voiceOn)requestAnimationFrame(tick);else looping=false;
+}
+function loop(){if(!looping){looping=true;last=performance.now();requestAnimationFrame(tick)}}
+function setLive(){document.body.classList.toggle('live',playing||voiceOn||!!cdTimer);$('play').textContent=playing||cdTimer?'Pause':'Play';sendStatus()}
+function start(){
+  if(playing||cdTimer)return;
+  if(voiceOn)stopVoice();
+  if(wc>=M.total){wc=0;pos=0;elapsed=0}else syncWc();
+  if($('withPlay').checked&&stream&&!recr)startRec(true);
+  const go=()=>{playing=true;setLive();loop()};
+  if(st.set.cd&&pos===0){let n=st.set.cd;const c=$('count');c.textContent=n;c.classList.add('on');
+    cdTimer=setInterval(()=>{n--;if(n<=0){clearInterval(cdTimer);cdTimer=null;c.classList.remove('on');go()}else c.textContent=n},1000);setLive();
+  }else go();
+}
+function stop(){if(cdTimer){clearInterval(cdTimer);cdTimer=null;$('count').classList.remove('on')}playing=false;setLive()}
+const toggle=()=>playing||cdTimer?stop():start();
+function jumpPara(dir){
+  const ps=[...$('text').children];const here=pos+gY;let tg=null;
+  if(dir>0)tg=ps.find(p=>p.offsetTop>here+2);else{const b=ps.filter(p=>p.offsetTop<here-2);tg=b[b.length-1]}
+  pos=tg?clamp(tg.offsetTop-gY):(dir>0?maxPos():0);target=pos;syncWc();if(dir>0&&!tg)wc=M.total;paint();sendStatus();
+}
+const setSpeed=v=>{st.set.wpm=Math.max(60,Math.min(300,Math.round(v/5)*5));$('speed').value=st.set.wpm;$('speedO').textContent=st.set.wpm+' wpm';paint();stats();renderLib();saveSet();sendStatus()};
+const setSize=v=>{st.set.size=Math.max(24,Math.min(140,v));renderCtl();saveSet()};
+const toTop=()=>{stop();pos=target=0;wc=0;elapsed=0;wi=-1;paint();sendStatus()};
+function act(a){({toggle,prev:()=>jumpPara(-1),next:()=>jumpPara(1),slower:()=>setSpeed(st.set.wpm-10),faster:()=>setSpeed(st.set.wpm+10),smaller:()=>setSize(st.set.size-4),bigger:()=>setSize(st.set.size+4),top:toTop,rec:()=>toggleRec()}[a]||(()=>{}))()}
+
+/* ---------- saving ---------- */
+const saveSet=()=>lsSet('cue-set',st.set);
+const saveLocal=()=>{if(!cloud)lsSet('cue-scripts',{scripts:st.scripts.filter(s=>s.scope!=='team'),cur:st.cur});else lsSet('cue-cur',st.cur)};
+const refFor=s=>s.scope==='team'?db.collection('team').doc(s.id):db.collection('data/users/'+uid).doc(s.id);
+function queue(id,fn){const p=(chains[id]||Promise.resolve()).then(fn,fn);chains[id]=p.catch(()=>{});return p}
+function writeErr(e,s){
+  if(e?.code==='quota_exceeded')flash('libMsg','Storage is full. Delete a few old scripts to save new ones.');
+  else if(e?.code==='invalid_argument'&&s?.scope==='team'){canTeam=false;renderLib();flash('libMsg','You can read team scripts but not change them.')}
+  else setSync('Not saved, retrying on next edit');
+}
+function persist(s,now){
+  s.updated=Date.now();
+  if(!cloud){saveLocal();return}
+  dirty.add(s.id);clearTimeout(timers[s.id]);setSync('Saving…');
+  const run=()=>queue(s.id,()=>{const x=st.scripts.find(y=>y.id===s.id);if(!x)return;
+    const body={title:x.title,body:x.body,updated:x.updated};if(x.scope==='team')body.by=x.by||uid;
+    return refFor(x).set(body).then(()=>{dirty.delete(s.id);setSync('Synced')},e=>{dirty.delete(s.id);writeErr(e,x)})});
+  if(now)run();else timers[s.id]=setTimeout(run,700);
+}
+function removeDoc(s){if(!cloud){saveLocal();return Promise.resolve()}return queue(s.id,()=>refFor(s).delete().catch(e=>writeErr(e,s)))}
+function merge(scope,docs){
+  const fresh=docs.filter(d=>!d.id.startsWith('_')).map(d=>{const v=d.data()||{};return{id:d.id,scope,title:String(v.title??''),body:String(v.body??''),updated:+v.updated||0,by:v.by?String(v.by):null}});
+  const keep=st.scripts.filter(s=>s.scope!==scope);
+  const out=fresh.map(f=>{const local=st.scripts.find(s=>s.id===f.id&&s.scope===scope);return local&&dirty.has(f.id)?local:f});
+  const c=cur(),beforeBody=c?.body;
+  st.scripts=[...keep,...out];
+  if(!st.scripts.length){const s={id:newId(),scope:'me',title:'New script',body:'',updated:Date.now()};st.scripts.push(s);persist(s,true)}
+  if(!st.scripts.find(s=>s.id===st.cur))st.cur=st.scripts[0].id;
+  renderLib();
+  const n=cur();const editing=document.activeElement===$('body')||document.activeElement===$('title');
+  if(n.id!==c?.id||(!editing&&n.body!==beforeBody)){renderEditor();renderText()}
+}
+async function initCloud(){
+  try{db=await window.claude?.use?.('db');user=await window.claude?.use?.('user')}catch(e){}
+  if(!db||!user)return;
+  try{uid=await user.id()}catch(e){}
+  if(!uid)return;
+  try{canTeam=(await user.can('data.write'))!==false}catch(e){canTeam=true}
+  cloud=true;setSync('Connecting…');
+  const lastCur=lsGet('cue-cur');
+  let first=true;const slow=setTimeout(()=>setSync('Sync is slow, edits are kept'),10000);
+  db.collection('data/users/'+uid).onSnapshot(async snap=>{
+    if(!snap.metadata.fromCache){clearTimeout(slow);setSync(dirty.size?'Saving…':'Synced')}
+    if(first&&!snap.metadata.fromCache){
+      first=false;
+      if(snap.empty){for(const s of st.scripts.filter(s=>s.scope!=='team'))persist(s,true);return}
+      if(lastCur)st.cur=lastCur;
+    }
+    if(first&&snap.empty)return;
+    merge('me',snap.docs);
+  },e=>{clearTimeout(slow);setSync('Sync unavailable');});
+  db.collection('team').onSnapshot(snap=>merge('team',snap.docs),()=>{});
+  $('foot').textContent='Your scripts sync to your account. Team scripts are shared with everyone who can open this page.';
+  renderLib();
+}
+
+/* ---------- voice follow ---------- */
+let dict=null,heard='';
+function setWord(j){
+  if(W[wi]?.el)W[wi].el.classList.remove('now');
+  wi=j;const el=W[j]?.el;if(!el)return;el.classList.add('now');
+  target=clamp(el.offsetTop+el.offsetHeight/2-gY);loop();
+}
+function match(text){
+  const toks=text.split(/\s+/).map(norm).filter(Boolean).slice(-6);if(!toks.length||!W.length)return;
+  const need=Math.min(2,toks.length);let best=-1,bs=-1;
+  const lo=Math.max(0,wi-4),hi=Math.min(W.length-1,wi+60);
+  for(let j=lo;j<=hi;j++){
+    let s=0;for(let k=0;k<toks.length;k++){const i=j-(toks.length-1-k);if(i>=0&&W[i].n===toks[k])s++}
+    if(s<need||W[j].n!==toks[toks.length-1]&&s<3)continue;
+    const sc=s-Math.abs(j-wi)*0.02-(j<wi?0.6:0);
+    if(sc>bs){bs=sc;best=j}
+  }
+  if(best>=0&&best!==wi)setWord(best);
+}
+function stopVoice(){if(dict)dict.stop().catch(()=>{})}
+function toggleVoice(){
+  if(!dict)return;
+  if(voiceOn){stopVoice();return}
+  stop();heard='';
+  const near=W.findIndex(w=>w.el&&w.el.offsetTop>=pos+gY-10);wi=near>0?near-1:-1;target=pos;
+  dict.start().catch(e=>{if(e?.code==='not_granted'){$('voice').hidden=true;$('badge').hidden=false;$('badge').textContent='Microphone not allowed';setTimeout(()=>$('badge').hidden=true,3000)}});
+}
+async function initVoice(){
+  try{dict=await window.claude?.use?.('dictation')}catch(e){}
+  if(!dict)return;
+  $('voice').hidden=false;
+  dict.onPartial(({text})=>match(heard+' '+text));
+  dict.onFinal(({text})=>{heard=(heard+' '+text).slice(-400);match(heard)});
+  dict.onState(({state})=>{
+    voiceOn=state==='listening';$('voice').classList.toggle('on',voiceOn);$('voice').textContent=voiceOn?'Listening…':'Follow my voice';
+    $('badge').hidden=!voiceOn;$('badge').textContent='Voice follow is on';setLive();if(voiceOn)loop();
+  });
+}
+
+/* ---------- assistant ---------- */
+let ask=null,aiCtrl=null,aiText='',aiPrev=null;
+const TASKS={
+  tighten:'Tighten this script. Cut filler and repetition, keep every fact, number and name, and keep the speaker\'s voice.',
+  spoken:'Rewrite this script so it sounds natural spoken aloud: short sentences, contractions, plain words, easy breaths. Keep every fact.',
+  cues:'Keep the words exactly as they are, and add a few delivery cues where they help, such as [PAUSE], [SLOW DOWN], [SMILE] or [LOOK AT CAMERA], plus *stars* around the one or two words to stress in key sentences.',
+  short:'Cut this script so it can be read aloud in about 60 seconds (about 150 words). Keep the opening, the main point and the close.'
+};
+async function assist(kind,extra){
+  if(!ask)return;
+  aiCtrl?.abort();aiCtrl=new AbortController();
+  const body=cur()?.body.trim()||'';
+  const task=kind?TASKS[kind]:(body?'Change the script as the user asks: '+extra:'Write a new script on this brief: '+extra+'. Aim for about 90 seconds read aloud.');
+  const prompt=`You edit teleprompter scripts that a presenter reads aloud on camera.\nTask: ${task}\nFormat: paragraphs of one to three sentences separated by a blank line; delivery cues in square brackets like [PAUSE]; stressed words in *single stars*; no headings, lists, markdown or commentary.\nReturn only the finished script.${body?`\n\nScript:\n"""\n${body}\n"""`:''}`;
+  aiText='';$('aiOut').hidden=false;$('aiOut').textContent='Thinking…';$('aiAct').hidden=true;flash('aiMsg','');
+  document.querySelectorAll('#aiChips .btn,#aiGo').forEach(b=>b.disabled=true);
+  try{
+    const r=await ask(prompt,{signal:aiCtrl.signal,cache:false,onText:({text})=>{aiText=text;$('aiOut').textContent=text||'Thinking…'}});
+    aiText=(r.text||aiText).trim().replace(/^"""|"""$/g,'').trim();$('aiOut').textContent=aiText;$('aiAct').hidden=!aiText;
+  }catch(e){
+    if(e?.name==='AbortError')return;
+    if(e?.code==='not_granted'){$('aiSec').hidden=true;return}
+    $('aiOut').hidden=!aiText;flash('aiMsg',e?.code==='rate_limited'?'The assistant is busy. Try again in a minute.':'The assistant could not finish. Try again.');
+    if(aiText)$('aiAct').hidden=false;
+  }finally{document.querySelectorAll('#aiChips .btn,#aiGo').forEach(b=>b.disabled=false)}
+}
+async function initAI(){try{ask=await window.claude?.use?.('sample')}catch(e){}if(ask)$('aiSec').hidden=false}
+
+/* ---------- remote ---------- */
+let room=null,pr=null,rr=null,code=null,statusT=0,statusTimer=null;
+const rcode=()=>{const a='abcdefghjkmnpqrstuvwxyz23456789';let s='';for(let i=0;i<4;i++)s+=a[Math.floor(Math.random()*a.length)];return s};
+function status(){const m=maxPos();return{title:cur()?.title||'Untitled',playing:playing||!!cdTimer,voice:voiceOn,rec:!!recr,speed:st.set.wpm,prog:m?Math.round(pos/m*1000)/10:0,left:fmt(secsLeft())}}
+function sendStatus(){
+  if(!pr)return;const now=Date.now();
+  if(now-statusT<300){clearTimeout(statusTimer);statusTimer=setTimeout(sendStatus,320);return}
+  statusT=now;pr.emit('status',status()).catch(()=>{});
+}
+async function joinPrompter(){
+  if(!room)return;
+  try{await pr?.leave()}catch(e){}pr=null;
+  code=lsGet('cue-code')||rcode();lsSet('cue-code',code);$('code').textContent=code;
+  try{pr=await room.join('cue-'+code)}catch(e){$('remOn').hidden=true;$('remOff').hidden=false;return}
+  $('remOn').hidden=false;$('remOff').hidden=true;
+  pr.on('ctl',m=>{if(!m.sameTab&&typeof m.data?.a==='string')act(m.data.a)});
+  pr.onPeers(ch=>{const n=ch.peers.filter(p=>!p.sameTab).length;$('remCount').textContent=n?`${n} remote${n>1?'s':''} connected.`:'No remote connected.';if(ch.joined.length)sendStatus()});
+}
+setInterval(()=>{if(playing||voiceOn)sendStatus()},1000);
+function renderRemote(s){
+  $('rStat').hidden=false;$('rTitle').textContent=s?s.title:'Waiting for the prompter…';
+  $('rRec').textContent=s?.rec?'■ Stop recording':'● Record';
+  $('rMeta').textContent=s?`${s.rec?'Recording · ':''}${s.voice?'Following voice':s.playing?'Playing':'Paused'} · ${s.speed} wpm · ${s.left} left`:'Keep the prompter page open on the other device.';
+  $('rBar').style.width=(s?s.prog:0)+'%';$('rPlay').textContent=s?.playing?'Pause':'Play';
+  document.body.classList.toggle('live',!!(s&&(s.playing||s.voice)));
+}
+async function joinRemote(c){
+  if(!room){$('rMsg').textContent='The remote works when this page is opened in claude.ai while you\'re signed in.';return}
+  try{await rr?.leave()}catch(e){}rr=null;
+  $('rMsg').textContent='Connecting…';
+  try{rr=await room.join('cue-'+c)}catch(e){$('rMsg').textContent='Could not connect. Check the code and try again.';return}
+  lsSet('cue-rcode',c);$('pad').hidden=false;renderRemote(null);$('rMsg').textContent='Connected to code '+c+'.';
+  rr.on('status',m=>{if(!m.sameTab&&m.data&&typeof m.data==='object'){const d=m.data;renderRemote({title:String(d.title||'Untitled').slice(0,120),rec:!!d.rec,playing:!!d.playing,voice:!!d.voice,speed:+d.speed||0,prog:Math.max(0,Math.min(100,+d.prog||0)),left:String(d.left||'')})}});
+  rr.onPeers(ch=>{if(!ch.peers.some(p=>!p.isMe||!p.sameTab))renderRemote(null)});
+  rr.emit('hello',{}).catch(()=>{});
+}
+$('pairF').addEventListener('submit',e=>{e.preventDefault();const c=$('pairIn').value.trim().toLowerCase();if(/^[a-z0-9]{4}$/.test(c))joinRemote(c);else $('rMsg').textContent='The code has four letters or numbers.'});
+$('pad').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||!rr)return;rr.emit('ctl',{a:b.dataset.a}).catch(e=>{if(e?.code==='not_permitted')$('rMsg').textContent='Your access to this page lets you watch but not control.'})});
+$('newCode').onclick=()=>{lsSet('cue-code',rcode());joinPrompter()};
+function route(){
+  const rem=location.hash==='#remote';document.body.classList.toggle('rmode',rem);
+  if(rem){stop();stopVoice();const c=lsGet('cue-rcode');if(c&&!rr){$('pairIn').value=c;joinRemote(c)}}
+  else{try{rr?.leave()}catch(e){}rr=null;$('pad').hidden=true;$('rStat').hidden=true;requestAnimationFrame(layout)}
+}
+window.addEventListener('hashchange',route);
+async function initRoom(){try{room=await window.claude?.use?.('room')}catch(e){}if(!room)return;joinPrompter();if(location.hash==='#remote')route()}
+
+/* ---------- recording ---------- */
+let stream=null,recr=null,recStart=0,recBytes=0,recTimer=null,recByPlay=false,takeN=0;
+const takes=[];
+const QB={2160:[3840,2160,45e6],1440:[2560,1440,24e6],1080:[1920,1080,14e6],720:[1280,720,7e6]};
+const blocked=()=>{try{const p=document.permissionsPolicy||document.featurePolicy;return !!(p?.allowsFeature&&(!p.allowsFeature('camera')||!p.allowsFeature('microphone')))}catch(e){return false}};
+const pickMime=ao=>{if(!window.MediaRecorder?.isTypeSupported)return'';const l=ao?['audio/mp4;codecs=mp4a.40.2','audio/mp4','audio/webm;codecs=opus','audio/webm']:['video/mp4;codecs=avc1.640033,mp4a.40.2','video/mp4;codecs=avc1,mp4a','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];return l.find(m=>MediaRecorder.isTypeSupported(m))||''};
+const extOf=(m,ao)=>/mp4/.test(m)?(ao?'m4a':'mp4'):'webm';
+const fmtMB=b=>b>=1e9?(b/1e9).toFixed(2)+' GB':Math.max(1,Math.round(b/1e6))+' MB';
+const camMsg=t=>{$('camInfo').textContent=t};
+async function fillDevices(){
+  try{const ds=await navigator.mediaDevices.enumerateDevices();
+    const opt=(k,lab)=>ds.filter(d=>d.kind===k).map((d,i)=>`<option value="${esc(d.deviceId)}">${esc(d.label||lab+' '+(i+1))}</option>`).join('');
+    const vt=stream?.getVideoTracks()[0]?.getSettings().deviceId,at=stream?.getAudioTracks()[0]?.getSettings().deviceId;
+    $('camSel').innerHTML='<option value="">Default camera</option>'+opt('videoinput','Camera');$('micSel').innerHTML='<option value="">Default microphone</option>'+opt('audioinput','Microphone');
+    if(vt)$('camSel').value=vt;if(at)$('micSel').value=at;
+  }catch(e){}
+}
+async function openCam(){
+  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){$('recBlock').hidden=false;return false}
+  stream?.getTracks().forEach(t=>t.stop());stream=null;
+  const q=QB[$('qual').value],fps=+$('fps').value,ao=$('audOnly').checked;
+  const audio={echoCancellation:false,autoGainControl:false,noiseSuppression:$('ns').checked,sampleRate:{ideal:48000},channelCount:{ideal:2}};
+  if($('micSel').value)audio.deviceId={exact:$('micSel').value};
+  const video=ao?false:{width:{ideal:q[0]},height:{ideal:q[1]},frameRate:{ideal:fps}};
+  if(video&&$('camSel').value)video.deviceId={exact:$('camSel').value};
+  camMsg('Starting…');
+  try{stream=await navigator.mediaDevices.getUserMedia({audio,video})}
+  catch(e){
+    if(e.name==='SecurityError'||(e.name==='NotAllowedError'&&blocked())){$('recBlock').hidden=false;camMsg('')}
+    else if(e.name==='NotAllowedError')camMsg('Camera or microphone access was declined. Allow it from the icon in the address bar, then try again.');
+    else if(['NotFoundError','NotReadableError','OverconstrainedError'].includes(e.name))camMsg('That camera or microphone is missing or busy in another app. Pick another one or close the other app.');
+    else camMsg('The camera could not start: '+e.message);
+    return false;
+  }
+  $('cam').srcObject=stream;$('cam').hidden=ao||!$('showCam').checked;
+  const v=stream.getVideoTracks()[0]?.getSettings()||{},a=stream.getAudioTracks()[0]?.getSettings()||{};
+  camMsg((ao?'Voice only':`Camera ${v.width||'?'}×${v.height||'?'} at ${Math.round(v.frameRate||0)} fps`)+` · microphone ${a.sampleRate?Math.round(a.sampleRate/1000)+' kHz':'on'}${a.channelCount>1?' stereo':''} · saves as ${extOf(pickMime(ao),ao).toUpperCase()}`);
+  $('camOn').textContent='Turn off camera and mic';fillDevices();return true;
+}
+function closeCam(){if(recr)return;stream?.getTracks().forEach(t=>t.stop());stream=null;$('cam').hidden=true;$('cam').srcObject=null;$('camOn').textContent='Turn on camera and mic';camMsg('')}
+async function startRec(byPlay){
+  if(recr)return;
+  const ao=$('audOnly').checked;let mime=pickMime(ao);
+  const name=`${(cur()?.title||'Take').replace(/[\\/:*?"<>|]+/g,'').trim().slice(0,60)||'Take'} take ${takeN+1}`;
+  let handle=null;
+  if($('toFile').checked&&window.showSaveFilePicker){try{handle=await window.showSaveFilePicker({suggestedName:name+'.'+extOf(mime,ao)})}catch(e){if(e.name==='AbortError')return}}
+  if(!stream&&!(await openCam()))return;
+  const q=QB[$('qual').value];const opts={audioBitsPerSecond:256000};
+  if(!ao)opts.videoBitsPerSecond=Math.round(q[2]*(+$('fps').value>=50?1.5:1));
+  if(mime)opts.mimeType=mime;
+  let r;try{r=new MediaRecorder(stream,opts)}catch(e){try{r=new MediaRecorder(stream)}catch(e2){camMsg('This browser cannot record video.');return}}
+  mime=r.mimeType||mime;
+  let writable=null,wchain=Promise.resolve(),chunks=[];
+  if(handle){try{writable=await handle.createWritable()}catch(e){writable=null}}
+  let up=null;
+  if(window.cueTakes&&$('upload').checked){try{up=await window.cueTakes.start({name:name+'.'+extOf(mime,ao),mime,script:cur()?.title||''})}catch(e){camMsg('This take is saved on this device only: '+(e.message||'upload unavailable'))}}
+  recBytes=0;const t0=Date.now();
+  r.ondataavailable=e=>{if(!e.data.size)return;recBytes+=e.data.size;if(up)up.push(e.data);if(writable){const w=writable;wchain=wchain.then(()=>w.write(e.data))}else chunks.push(e.data)};
+  r.onstop=async()=>{
+    const take={name:name+'.'+extOf(mime,ao),dur:(Date.now()-t0)/1000,size:recBytes};
+    if(writable){await wchain.catch(()=>{});try{await writable.close()}catch(e){}take.saved=true}
+    else{const b=new Blob(chunks,{type:(mime||'video/webm').split(';')[0]});take.url=URL.createObjectURL(b);take.size=b.size}
+    chunks=[];take.up=up;takes.unshift(take);renderTakes();
+    if(up){up.onProgress=renderTakes;up.finish(take.dur).then(()=>{renderTakes();window.dispatchEvent(new Event('cue:takes-changed'))},()=>renderTakes())}
+  };
+  r.onerror=()=>{camMsg('Recording stopped because the camera or microphone was disconnected.');stopRec()};
+  r.start(1000);recr=r;recByPlay=!!byPlay;takeN++;recStart=t0;
+  document.body.classList.add('rec');$('recBtn').textContent='Stop recording';$('recb').hidden=false;$('recb').textContent='REC 0:00';
+  recTimer=setInterval(()=>{$('recb').textContent=`REC ${fmt((Date.now()-recStart)/1000)} · ${fmtMB(recBytes)}${up?(up.state==='failed'?' · upload failed':` · ${fmtMB(up.sent)} uploaded`):''}`},500);
+  sendStatus();
+}
+function stopRec(){
+  if(!recr)return;const r=recr;recr=null;try{r.stop()}catch(e){}
+  clearInterval(recTimer);document.body.classList.remove('rec');$('recBtn').textContent='Record';$('recb').hidden=true;sendStatus();
+}
+const toggleRec=()=>recr?stopRec():startRec(false);
+function renderTakes(){
+  $('takes').innerHTML=takes.map((t,i)=>`<div class="take"><div><b>${esc(t.name)}</b><span>${fmt(t.dur)} · ${fmtMB(t.size)}${t.up?' · '+(t.up.state==='done'?'in your library':t.up.state==='failed'?'upload failed, download it instead':`uploading ${t.size?Math.min(99,Math.floor(t.up.sent/t.size*100)):0}%`):''}</span></div>${t.saved?'<span>Saved to your file</span>':`<a class="btn" href="${t.url}" download="${esc(t.name)}" data-dl="${i}">Download</a>`}<button class="btn ghost" data-del="${i}" aria-label="Delete take">Delete</button></div>`).join('');
+}
+$('takes').addEventListener('click',e=>{
+  const d=e.target.closest('[data-dl]');if(d){takes[+d.dataset.dl].dl=true;return}
+  const x=e.target.closest('[data-del]');if(x){const t=takes.splice(+x.dataset.del,1)[0];if(t?.url)URL.revokeObjectURL(t.url);renderTakes()}
+});
+$('recBtn').onclick=toggleRec;
+$('camOn').onclick=()=>stream?closeCam():openCam();
+for(const id of ['camSel','micSel','qual','fps','audOnly','ns'])$(id).addEventListener('change',()=>{if(stream&&!recr)openCam()});
+$('showCam').onchange=()=>{$('cam').hidden=!stream||$('audOnly').checked||!$('showCam').checked};
+$('toFileL').hidden=!window.showSaveFilePicker;
+Promise.resolve(window.cueTakes?.ready).then(ok=>{$('upL').hidden=!ok}).catch(()=>{});
+if(blocked())$('recBlock').hidden=false;
+window.addEventListener('beforeunload',e=>{if(recr||takes.some(t=>(t.url&&!t.dl&&!(t.up&&t.up.state==='done'))||(t.up&&t.up.state==='uploading'))){e.preventDefault();e.returnValue=''}});
+
+/* ---------- importing ---------- */
+// Markdown: drop heading marks, list bullets and links; keep **bold** as *stress*.
+const mdText=t=>t.replace(/^#{1,6}\s*/gm,'').replace(/^\s*[-*+]\s+/gm,'').replace(/\[([^\]]+)\]\([^)]*\)/g,'$1').replace(/\*\*([^*]+)\*\*/g,'*$1*').replace(/__([^_]+)__/g,'*$1*');
+// Word: read word/document.xml straight out of the .docx zip, no library needed.
+async function docxText(file){
+  const buf=new Uint8Array(await file.arrayBuffer()),dv=new DataView(buf.buffer);
+  let e=buf.length-22;while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--;
+  if(e<0)throw new Error('It is not a valid Word file.');
+  const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true),xml=null;
+  for(let i=0;i<n&&p+46<=buf.length;i++){
+    const method=dv.getUint16(p+10,true),csize=dv.getUint32(p+20,true),nlen=dv.getUint16(p+28,true),elen=dv.getUint16(p+30,true),clen=dv.getUint16(p+32,true),off=dv.getUint32(p+42,true);
+    const name=new TextDecoder().decode(buf.subarray(p+46,p+46+nlen));
+    if(name==='word/document.xml'){
+      const start=off+30+dv.getUint16(off+26,true)+dv.getUint16(off+28,true),data=buf.subarray(start,start+csize);
+      if(method===0)xml=new TextDecoder().decode(data);
+      else if(method===8){if(!window.DecompressionStream)throw new Error('This browser cannot open Word files. Save it as .txt instead.');xml=await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text()}
+      else throw new Error('The Word file uses an unusual compression.');
+      break;
+    }
+    p+=46+nlen+elen+clen;
+  }
+  if(xml==null)throw new Error('No document text was found in it.');
+  const doc=new DOMParser().parseFromString(xml,'application/xml'),NS='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+  const on=(rPr,tag)=>{const b=rPr&&rPr.getElementsByTagNameNS(NS,tag)[0];if(!b)return false;const v=b.getAttributeNS(NS,'val')??b.getAttribute('w:val');return v==null||!/^(0|false|none)$/i.test(v)};
+  const paras=[];
+  for(const para of doc.getElementsByTagNameNS(NS,'p')){
+    let out='';
+    for(const r of para.getElementsByTagNameNS(NS,'r')){
+      let t='';
+      for(const c of r.childNodes){if(c.localName==='t')t+=c.textContent;else if(c.localName==='tab')t+=' ';else if(c.localName==='br'||c.localName==='cr')t+='\n'}
+      if(!t)continue;
+      const rPr=r.getElementsByTagNameNS(NS,'rPr')[0];
+      out+=on(rPr,'b')&&t.trim()&&!t.includes('*')?t.replace(/^(\s*)(.*?)(\s*)$/s,'$1*$2*$3'):t;
+    }
+    out=out.replace(/\*(\s*)\*/g,'$1').trim();
+    if(out)paras.push(out);
+  }
+  if(!paras.length)throw new Error('The document has no text.');
+  return paras.join('\n\n');
+}
+
+/* ---------- second screen ---------- */
+const OUT=location.hash==='#output';
+const TARGET=location.origin&&location.origin!=='null'?location.origin:'*';
+let outWin=null,outBusy=false;
+function toOut(m){
+  if(!outWin)return;
+  if(outWin.closed){outWin=null;$('outBtn').classList.remove('on');$('outBtn').textContent='Second screen';return}
+  try{outWin.postMessage({cue:1,...m},TARGET)}catch(e){}
+}
+function outScript(){if(outWin&&st)toOut({t:'script',title:cur()?.title||'',body:cur()?.body||'',set:{...st.set,fx:st.set.ofx,fy:st.set.ofy}})}
+function outPos(){if(outWin)toOut({t:'pos',wc,live:playing||voiceOn||!!cdTimer,count:$('count').classList.contains('on')?$('count').textContent:''})}
+const toMain=m=>{try{window.opener?.postMessage({cue:1,...m},TARGET)}catch(e){}};
+async function openOutput(){
+  if(outWin&&!outWin.closed){outWin.focus();return}
+  if(outBusy)return;outBusy=true;
+  const w=window.open(location.href.split('#')[0]+'#output','cue-output','popup,width=1280,height=720');
+  outBusy=false;
+  if(!w){$('badge').hidden=false;$('badge').textContent='Allow pop-ups for this site to open a second screen';setTimeout(()=>{if(!voiceOn)$('badge').hidden=true},4000);return}
+  outWin=w;$('outBtn').classList.add('on');$('outBtn').textContent='Second screen on';
+  try{
+    if('getScreenDetails' in window){
+      const sd=await window.getScreenDetails();
+      const ext=sd.screens.find(x=>x!==sd.currentScreen&&!x.isPrimary)||sd.screens.find(x=>x!==sd.currentScreen);
+      if(ext){w.moveTo(ext.availLeft,ext.availTop);w.resizeTo(ext.availWidth,ext.availHeight)}
+    }
+  }catch(e){}
+}
+setInterval(()=>{if(outWin&&outWin.closed)toOut({})},1000);
+window.addEventListener('message',e=>{
+  const d=e.data;if(!d||d.cue!==1)return;
+  if(!OUT){
+    if(!outWin||e.source!==outWin)return;
+    if(d.t==='hello'){outScript();outPos()}
+    else if(d.t==='ctl'&&typeof d.a==='string')act(d.a);
+    return;
+  }
+  if(e.source!==window.opener)return;
+  if(d.t==='script'&&d.set&&typeof d.body==='string'){
+    st.scripts=[{id:'out',scope:'me',title:String(d.title),body:d.body}];st.cur='out';
+    st.set={...defSet,...d.set};document.title=(d.title||'Script')+' · Cue output';
+    renderCtl();renderText();
+  }else if(d.t==='pos'){
+    wc=Math.max(0,+d.wc||0);pos=clamp(yAt(wc)-gY);paint();
+    document.body.classList.toggle('live',!!d.live);
+    const c=$('count');c.classList.toggle('on',!!d.count);if(d.count)c.textContent=String(d.count).slice(0,3);
+  }
+});
+function goFull(){const r=document.documentElement.requestFullscreen?.();r?.catch?.(()=>{})}
+function startOutput(){
+  document.body.classList.add('omode');document.title='Cue output';
+  $('ohint').hidden=false;
+  document.addEventListener('fullscreenchange',()=>document.body.classList.toggle('fs',!!document.fullscreenElement));
+  if(window.opener)toMain({t:'hello'});
+  else{$('text').innerHTML='<p style="opacity:.6">Open this window with the Second screen button in Cue.</p>';layout()}
+  requestAnimationFrame(layout);
+}
+
+/* ---------- events ---------- */
+const pickScript=id=>{st.cur=id;stop();stopVoice();pos=target=0;wc=0;elapsed=0;renderAll();saveLocal();sendStatus()};
+const lib=e=>{const b=e.target.closest('.pick');if(b)pickScript(b.dataset.id)};
+$('libMe').addEventListener('click',lib);$('libTeam').addEventListener('click',lib);
+$('newS').onclick=()=>{const s={id:newId(),scope:'me',title:'New script',body:'',updated:Date.now()};st.scripts.push(s);pickScript(s.id);persist(s,true);$('body').focus()};
+$('dupS').onclick=()=>{const c=cur();const s={id:newId(),scope:'me',title:c.title+' (copy)',body:c.body,updated:Date.now()};st.scripts.push(s);pickScript(s.id);persist(s,true)};
+$('delS').onclick=()=>{const c=cur();if(!c)return;lastDeleted={...c};st.scripts=st.scripts.filter(s=>s!==c);removeDoc(c);
+  if(!st.scripts.length){const s={id:newId(),scope:'me',title:'New script',body:'',updated:Date.now()};st.scripts.push(s);persist(s,true)}
+  pickScript(st.scripts[0].id);$('undoMsg').textContent=`“${c.title||'Untitled'}” deleted.`;$('undoRow').hidden=false;saveLocal()};
+$('undo').onclick=()=>{if(!lastDeleted)return;const s=lastDeleted;lastDeleted=null;st.scripts.push(s);persist(s,true);pickScript(s.id);$('undoRow').hidden=true};
+$('shareS').onclick=()=>{const c=cur();if(!c||!cloud)return;const old={...c};
+  c.scope=c.scope==='team'?'me':'team';if(c.scope==='team')c.by=uid;
+  removeDoc(old);persist(c,true);renderLib()};
+$('title').oninput=e=>{const c=cur();c.title=e.target.value;renderLib();persist(c)};
+$('body').oninput=e=>{const c=cur();c.body=e.target.value;renderText();renderLib();stats();persist(c)};
+$('file').onchange=e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  const isDocx=/\.docx$/i.test(f.name)||f.type.includes('wordprocessingml');
+  (isDocx?docxText(f):f.text().then(t=>/\.md$/i.test(f.name)?mdText(t):t)).then(t=>{
+    const s={id:newId(),scope:'me',title:f.name.replace(/\.[^.]+$/,''),body:t.trim(),updated:Date.now()};
+    st.scripts.push(s);pickScript(s.id);persist(s,true);flash('libMsg','');
+  }).catch(err=>flash('libMsg',`Couldn't read “${f.name}”. ${err?.message||''}`.trim()));
+};
+$('copy').onclick=()=>{const b=$('copy');Promise.resolve(navigator.clipboard?.writeText(cur().body)).then(()=>{b.textContent='Copied'},()=>{b.textContent='Copy blocked'}).finally(()=>setTimeout(()=>b.textContent='Copy text',1500))};
+$('aiChips').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(b)assist(b.dataset.k)});
+$('aiGo').onclick=()=>{const v=$('aiAsk').value.trim();if(v)assist(null,v)};
+$('aiAsk').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('aiGo').click()}});
+$('aiUse').onclick=()=>{const c=cur();aiPrev={id:c.id,body:c.body};c.body=aiText;renderEditor();renderText();renderLib();persist(c,true);$('aiOut').hidden=true;$('aiAct').hidden=true;$('aiAsk').value='';
+  $('undoMsg').textContent='Assistant version applied.';$('undoRow').hidden=false;lastDeleted=null;
+  $('undo').onclick=()=>{const s=st.scripts.find(x=>x.id===aiPrev?.id);if(s){s.body=aiPrev.body;renderEditor();renderText();persist(s,true)}$('undoRow').hidden=true;$('undo').onclick=undoDel};};
+const undoDel=$('undo').onclick;
+$('aiDrop').onclick=()=>{aiCtrl?.abort();$('aiOut').hidden=true;$('aiAct').hidden=true};
+$('speed').oninput=e=>setSpeed(+e.target.value);
+$('size').oninput=e=>setSize(+e.target.value);
+$('width').oninput=e=>{st.set.width=+e.target.value;renderCtl();saveSet()};
+$('guideP').oninput=e=>{st.set.guide=+e.target.value;renderCtl();saveSet()};
+$('cd').oninput=e=>{st.set.cd=+e.target.value;renderCtl();saveSet()};
+$('fx').onchange=e=>{st.set.fx=e.target.checked;renderCtl();saveSet()};
+$('fy').onchange=e=>{st.set.fy=e.target.checked;renderCtl();saveSet()};
+$('dim').onchange=e=>{st.set.dim=e.target.checked;paint();saveSet();outScript()};
+$('ofx').onchange=e=>{st.set.ofx=e.target.checked;saveSet();outScript();outPos()};
+$('ofy').onchange=e=>{st.set.ofy=e.target.checked;saveSet();outScript();outPos()};
+$('outBtn').onclick=openOutput;
+$('play').onclick=toggle;
+$('voice').onclick=toggleVoice;
+$('reset').onclick=toTop;
+$('slow').onclick=()=>setSpeed(st.set.wpm-10);
+$('fast').onclick=()=>setSpeed(st.set.wpm+10);
+$('mir').onclick=()=>{st.set.fx=!st.set.fx;renderCtl();saveSet()};
+$('full').onclick=()=>{const on=document.body.classList.toggle('full');document.body.classList.toggle('hidebar',on);$('full').textContent=on?'Show editor':'Prompter only';
+  if(on)document.documentElement.requestFullscreen?.()?.catch?.(()=>{});else if(document.fullscreenElement)document.exitFullscreen?.()?.catch?.(()=>{});
+  requestAnimationFrame(layout)};
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&document.body.classList.contains('full')){document.body.classList.remove('full','hidebar');$('full').textContent='Prompter only';requestAnimationFrame(layout)}});
+document.addEventListener('keydown',e=>{
+  if(document.body.classList.contains('rmode')||e.target.matches('input,textarea'))return;
+  const k=e.key;
+  if(OUT){const a={' ':'toggle',ArrowRight:'next',PageDown:'next',ArrowLeft:'prev',PageUp:'prev',ArrowUp:'slower',ArrowDown:'faster',Home:'top'}[k];if(a){e.preventDefault();toMain({t:'ctl',a})}else if(k==='f'||k==='F')goFull();return}
+  if(k===' '){e.preventDefault();toggle()}
+  else if(k==='ArrowUp'){e.preventDefault();setSpeed(st.set.wpm-10)}
+  else if(k==='ArrowDown'){e.preventDefault();setSpeed(st.set.wpm+10)}
+  else if(k==='ArrowRight'||k==='PageDown'){e.preventDefault();jumpPara(1)}
+  else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();jumpPara(-1)}
+  else if(k==='+'||k==='=')setSize(st.set.size+4);
+  else if(k==='-'||k==='_')setSize(st.set.size-4);
+  else if(k==='Home'){e.preventDefault();toTop()}
+  else if(k==='v'||k==='V')toggleVoice();
+  else if(k==='r'||k==='R')toggleRec();
+  else if(k==='m'||k==='M')$('mir').click();
+  else if(k==='f'||k==='F')$('full').click();
+  else if(k==='o'||k==='O')openOutput();
+});
+const g=$('glass');
+g.addEventListener('wheel',e=>{e.preventDefault();if(OUT)return;pos=target=clamp(pos+e.deltaY*(st.set.fy?-1:1));syncWc();paint()},{passive:false});
+let dragY=null,moved=0;
+g.addEventListener('pointerdown',e=>{if(OUT){goFull();return}dragY=e.clientY;moved=0;g.setPointerCapture(e.pointerId);g.classList.add('drag')});
+g.addEventListener('pointermove',e=>{if(dragY===null)return;const d=e.clientY-dragY;dragY=e.clientY;moved+=Math.abs(d);pos=target=clamp(pos-d*(st.set.fy?-1:1));syncWc();paint()});
+g.addEventListener('pointerup',()=>{if(dragY!==null&&moved<4)toggle();dragY=null;g.classList.remove('drag')});
+g.addEventListener('pointercancel',()=>{dragY=null;g.classList.remove('drag')});
+const ro=new ResizeObserver(()=>layout());ro.observe(g);
+
+function renderAll(){renderLib();renderEditor();renderCtl();renderText()}
+function boot(data){
+  const local=lsGet('cue-scripts');
+  st=(data&&data.scripts)?data:{scripts:local?.scripts?.length?local.scripts:structuredClone(sample),cur:local?.cur||'s1',set:{...defSet,...(lsGet('cue-set')||{})}};
+  st.scripts.forEach(s=>{s.scope=s.scope||'me'});
+  renderAll();
+  if(OUT){startOutput();return}
+  route();
+  window.claude?.hot?.snapshot?.(()=>st);
+  initCloud();initVoice();initAI();initRoom();
+}
+window.claude?.hot?.ready?window.claude.hot.ready(boot):boot(window.claude?.hot?.data??null);
+}
+</script>
+</body>
+</html>

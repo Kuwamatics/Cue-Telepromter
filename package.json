@@ -1,0 +1,18 @@
+{
+  "name": "cue-teleprompter",
+  "version": "1.0.0",
+  "description": "Self-hosted teleprompter platform: scripts, teams, phone remote, voice follow, AI script assistant and high-quality recording.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --no-warnings --env-file-if-exists=.env server.js",
+    "test": "node --no-warnings test/api.test.mjs"
+  },
+  "engines": {
+    "node": ">=22.9"
+  },
+  "dependencies": {
+    "ws": "8.18.0"
+  },
+  "license": "MIT"
+}

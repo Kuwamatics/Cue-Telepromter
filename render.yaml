@@ -1,0 +1,16 @@
+# One-click deploy on Render (render.com): New > Blueprint, point it at this repo.
+services:
+  - type: web
+    name: cue
+    runtime: docker
+    plan: starter
+    healthCheckPath: /healthz
+    envVars:
+      - key: CUE_DATA
+        value: /data
+      - key: ANTHROPIC_API_KEY
+        sync: false
+    disk:
+      name: cue-data
+      mountPath: /data
+      sizeGB: 1
