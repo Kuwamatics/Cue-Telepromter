@@ -1,4 +1,4 @@
-// Cue teleprompter server.
+// SomaPrompt teleprompter server.
 // One process: static site, JSON API, live sync over WebSocket, AI proxy.
 // Storage: SQLite (built into Node 22.5+). Only dependency: ws.
 import http from 'node:http';
@@ -508,7 +508,7 @@ setInterval(() => {
 }, 30000).unref();
 
 server.listen(PORT, () => {
-  console.log(`Cue is running on http://localhost:${PORT}`);
+  console.log(`SomaPrompt is running on http://localhost:${PORT}`);
   console.log(`Data: ${DATA} · AI assistant: ${AI_KEY ? 'on (' + AI_MODEL + ')' : 'off (set ANTHROPIC_API_KEY)'}`);
 });
 

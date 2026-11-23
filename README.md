@@ -1,4 +1,4 @@
-# Cue teleprompter
+# SomaPrompt
 
 A self-hosted teleprompter platform for presenters and teams.
 
@@ -40,14 +40,14 @@ The site must be served over **HTTPS**. Browsers only allow the camera, micropho
 **Docker** (any VPS, Fly.io, Railway and similar):
 
 ```bash
-docker build -t cue .
-docker run -d -p 8080:8080 -v cue-data:/data -e ANTHROPIC_API_KEY=sk-ant-... cue
+docker build -t somaprompt .
+docker run -d -p 8080:8080 -v somaprompt-data:/data -e ANTHROPIC_API_KEY=sk-ant-... somaprompt
 ```
 
 Put it behind a reverse proxy that handles HTTPS (Caddy, nginx, Traefik or your platform's own). The proxy must pass WebSocket upgrades on `/ws`. With Caddy this is all you need:
 
 ```
-cue.example.com {
+somaprompt.com {
   reverse_proxy localhost:8080
 }
 ```

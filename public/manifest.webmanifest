@@ -1,6 +1,6 @@
 {
-  "name": "Cue Teleprompter",
-  "short_name": "Cue",
+  "name": "SomaPrompt",
+  "short_name": "SomaPrompt",
   "description": "Teleprompter with synced scripts, team library, phone remote, voice follow and recording.",
   "start_url": "/",
   "display": "standalone",

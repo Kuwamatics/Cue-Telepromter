@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cue Teleprompter</title>
+<title>SomaPrompt</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
 <style>
@@ -146,7 +146,7 @@ body{overflow:auto}
 <body>
 <div class="app" id="app">
   <aside class="side">
-    <div class="brand"><span class="tally" aria-hidden="true"></span><h1>Cue</h1><span class="sync" id="sync">Saved on this device</span></div>
+    <div class="brand"><span class="tally" aria-hidden="true"></span><h1>SomaPrompt</h1><span class="sync" id="sync">Saved on this device</span></div>
 
     <div class="sec">
       <h2>Scripts</h2>
@@ -203,7 +203,7 @@ body{overflow:auto}
 
     <details class="sec" id="recSec" open>
       <summary>Recording</summary>
-      <p class="msg" id="recBlock" hidden>This view blocks the camera and microphone. To record, open the standalone Cue file in Chrome or Edge.</p>
+      <p class="msg" id="recBlock" hidden>This view blocks the camera and microphone. To record, open the standalone SomaPrompt file in Chrome or Edge.</p>
       <div class="row"><button class="btn" id="camOn">Turn on camera and mic</button></div>
       <div id="recCfg" style="margin-top:8px">
         <div class="fld"><label for="camSel">Camera</label><select id="camSel"><option value="">Default camera</option></select></div>
@@ -271,7 +271,7 @@ body{overflow:auto}
       <div class="prog" id="prog"></div>
       <div class="count" id="count">3</div>
       <div class="badge" id="badge" hidden></div>
-      <div class="ohint" id="ohint" hidden>Click for full screen. Controls stay in the main Cue window.</div>
+      <div class="ohint" id="ohint" hidden>Click for full screen. Controls stay in the main SomaPrompt window.</div>
       <video class="cam" id="cam" muted playsinline autoplay hidden></video>
       <div class="recb" id="recb" hidden>REC 0:00</div>
     </div>
@@ -280,7 +280,7 @@ body{overflow:auto}
 
 <div class="remote" id="remote">
   <div class="wrap">
-    <header><span class="tally" aria-hidden="true"></span><h1>Cue remote</h1><a href="#">Back to prompter</a></header>
+    <header><span class="tally" aria-hidden="true"></span><h1>SomaPrompt remote</h1><a href="#">Back to prompter</a></header>
     <form id="pairF" class="row" style="flex-wrap:nowrap;align-items:end">
       <div style="flex:1"><label for="pairIn">Pairing code from the prompter</label><input id="pairIn" maxlength="4" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text"></div>
       <button class="btn" style="min-height:58px">Connect</button>
@@ -306,7 +306,7 @@ body{overflow:auto}
 const $=id=>document.getElementById(id);
 const sample=[
  {id:'s1',scope:'me',title:'Quarterly update, opening',body:"Good morning, everyone, and thank you for joining.\n\nThis quarter we set out to do three things: ship the new onboarding, cut support wait times in half, and open our first office in Nairobi. [PAUSE]\n\nI'm glad to say we did *all three*.\n\nOnboarding went live in September. Since then, new teams reach their first finished project in two days instead of five.\n\nSupport wait times fell from eleven minutes to four. That is the work of a team that grew by only two people. [LOOK AT CAMERA]\n\nAnd last month we opened the doors in Nairobi, with fourteen colleagues who are already serving customers across East Africa.\n\nIn the next twenty minutes I'll walk you through what worked, what didn't, and where we go next. [CLICK, SLIDE 2]\n\nLet's start with the numbers."},
- {id:'s2',scope:'me',title:'Product video intro',body:"Meet Cue. [SMILE]\n\nA teleprompter that lives in your browser.\n\nPaste your script, press play, and look straight into the lens while your words roll past at exactly your pace.\n\nMirror it for glass rigs. Drive it from your phone. *No installs.*\n\n[PAUSE]\n\nJust you, your message, and the camera."}
+ {id:'s2',scope:'me',title:'Product video intro',body:"Meet SomaPrompt. [SMILE]\n\nA teleprompter that lives in your browser.\n\nPaste your script, press play, and look straight into the lens while your words roll past at exactly your pace.\n\nMirror it for glass rigs. Drive it from your phone. *No installs.*\n\n[PAUSE]\n\nJust you, your message, and the camera."}
 ];
 const defSet={ofx:false,ofy:false,wpm:150,size:64,width:80,guide:35,cd:3,fx:false,fy:false,dim:true};
 let st;
@@ -787,7 +787,7 @@ window.addEventListener('message',e=>{
   if(e.source!==window.opener)return;
   if(d.t==='script'&&d.set&&typeof d.body==='string'){
     st.scripts=[{id:'out',scope:'me',title:String(d.title),body:d.body}];st.cur='out';
-    st.set={...defSet,...d.set};document.title=(d.title||'Script')+' · Cue output';
+    st.set={...defSet,...d.set};document.title=(d.title||'Script')+' · SomaPrompt output';
     renderCtl();renderText();
   }else if(d.t==='pos'){
     wc=Math.max(0,+d.wc||0);pos=clamp(yAt(wc)-gY);paint();
@@ -797,11 +797,11 @@ window.addEventListener('message',e=>{
 });
 function goFull(){const r=document.documentElement.requestFullscreen?.();r?.catch?.(()=>{})}
 function startOutput(){
-  document.body.classList.add('omode');document.title='Cue output';
+  document.body.classList.add('omode');document.title='SomaPrompt output';
   $('ohint').hidden=false;
   document.addEventListener('fullscreenchange',()=>document.body.classList.toggle('fs',!!document.fullscreenElement));
   if(window.opener)toMain({t:'hello'});
-  else{$('text').innerHTML='<p style="opacity:.6">Open this window with the Second screen button in Cue.</p>';layout()}
+  else{$('text').innerHTML='<p style="opacity:.6">Open this window with the Second screen button in SomaPrompt.</p>';layout()}
   requestAnimationFrame(layout);
 }
 

@@ -1,4 +1,4 @@
-// Cue platform layer.
+// SomaPrompt platform layer.
 // Gives the teleprompter page the same services it uses on claude.ai
 // (db, user, room, dictation, sample), backed by this site's own server,
 // plus the sign-in screen and the Account and team panel.
@@ -55,7 +55,7 @@
       const el = document.createElement('div');
       el.className = 'cue-auth'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'cueAuthT');
       el.innerHTML = `<form class="card" novalidate>
-        <h1 id="cueAuthT"><i aria-hidden="true"></i>Cue</h1>
+        <h1 id="cueAuthT"><i aria-hidden="true"></i>SomaPrompt</h1>
         <p>A teleprompter for presenters and teams. Sign in to sync your scripts, share them with your team and pair your phone as a remote.</p>
         <div class="tabs" role="tablist"><button type="button" role="tab" data-m="in" aria-selected="true">Sign in</button><button type="button" role="tab" data-m="up" aria-selected="false" ${config.signup ? '' : 'hidden'}>Create account</button></div>
         <label data-up hidden>Your name<input name="name" autocomplete="name" maxlength="60"></label>
@@ -63,7 +63,7 @@
         <label>Password<input name="password" type="password" autocomplete="current-password" minlength="8" required></label>
         <div class="err" role="alert"></div>
         <button class="go" type="submit">Sign in</button>
-        <button class="skip" type="button">Use Cue without an account on this device</button>
+        <button class="skip" type="button">Use SomaPrompt without an account on this device</button>
       </form>`;
       document.body.appendChild(el);
       const f = $('form', el); let mode = 'in';
@@ -385,7 +385,7 @@
   function renderAccount(sec, me) {
     if (!me) {
       sec.innerHTML = `<summary>Account and team</summary>
-        <p class="hint" style="margin-top:0">You're using Cue without an account. Scripts stay in this browser on this device.</p>
+        <p class="hint" style="margin-top:0">You're using SomaPrompt without an account. Scripts stay in this browser on this device.</p>
         <div class="row" style="margin-top:8px"><button class="btn" id="cueSignIn">Sign in or create an account</button></div>`;
       $('#cueSignIn', sec).onclick = () => { lsSet('cue-local', null); location.reload(); };
       return;

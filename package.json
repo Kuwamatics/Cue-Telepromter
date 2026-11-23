@@ -1,5 +1,5 @@
 {
-  "name": "cue-teleprompter",
+  "name": "somaprompt",
   "version": "1.0.0",
   "description": "Self-hosted teleprompter platform: scripts, teams, phone remote, voice follow, AI script assistant and high-quality recording.",
   "type": "module",

@@ -1,4 +1,4 @@
-// Cue service worker: keeps the app shell available offline.
+// SomaPrompt service worker: keeps the app shell available offline.
 // Network first, so a new version shows up as soon as it is deployed.
 const CACHE = 'cue-v1';
 const SHELL = ['/', '/index.html', '/platform.js', '/manifest.webmanifest', '/icon.svg'];
