@@ -110,6 +110,7 @@ kbd{font:600 12px Archivo,sans-serif;border:1px solid var(--line);border-bottom-
 .badge{position:absolute;right:14px;bottom:14px;z-index:3;font:600 13px Archivo,sans-serif;color:#ddd;background:#000b;border:1px solid #333;border-radius:20px;padding:4px 10px}
 .cam{position:absolute;top:14px;right:14px;width:clamp(120px,22%,240px);aspect-ratio:16/9;object-fit:cover;border-radius:10px;border:2px solid #333;background:#111;z-index:3;transform:scaleX(-1)}
 .rec .cam{border-color:var(--red)}
+.camtop .cam{top:12px;right:auto;left:50%;width:clamp(170px,34%,460px);border-radius:14px;transform:translateX(-50%) scaleX(-1);box-shadow:0 10px 30px #000a}
 .scrim{display:none;position:absolute;inset:0;pointer-events:none;background:rgb(0 0 0/var(--scrim,.45))}
 .camfull .cam{top:0;right:0;width:100%;height:100%;aspect-ratio:auto;border:0;border-radius:0;z-index:0}
 .camfull .scrim{display:block;z-index:1}
@@ -250,7 +251,7 @@ body{overflow:auto}
         <label class="tog"><input type="checkbox" id="audOnly"> Voice only, no video</label>
         <label class="tog"><input type="checkbox" id="ns"> Noise suppression (off sounds more natural)</label>
         <label class="tog"><input type="checkbox" id="withPlay" checked> Start recording when I press Play</label>
-        <div class="fld"><label for="camView">Camera view</label><select id="camView"><option value="full">Behind the text</option><option value="corner">Corner</option><option value="off">Hidden</option></select></div>
+        <div class="fld"><label for="camView">Camera view</label><select id="camView"><option value="top">Top centre, over the text</option><option value="full">Behind the text</option><option value="corner">Top corner</option><option value="off">Hidden</option></select></div>
         <div class="ctl" id="scrimRow"><label for="scrim">Text backdrop</label><input type="range" id="scrim" min="0" max="85" step="5"><output id="scrimO"></output></div>
         <p class="hint" id="camTip">With the camera behind the text, set the reading line near the top so your eyes stay close to the lens. A stronger backdrop makes the words easier to read.</p>
         <label class="tog" id="upL" hidden><input type="checkbox" id="upload" checked> Upload each take to my takes library</label>
@@ -280,7 +281,7 @@ body{overflow:auto}
         <kbd>+ −</kbd><span>Text size</span>
         <kbd>Home</kbd><span>Back to the top</span>
         <kbd>R</kbd><span>Start or stop recording</span>
-        <kbd>C</kbd><span>Camera: behind text, corner or hidden</span>
+        <kbd>C</kbd><span>Camera: top centre, behind text, corner or hidden</span>
         <kbd>V</kbd><span>Voice follow on or off</span>
         <kbd>M</kbd><span>Mirror</span>
         <kbd>F</kbd><span>Prompter only</span>
@@ -351,7 +352,7 @@ const sample=[
  {id:'s1',scope:'me',title:'Quarterly update, opening',body:"Good morning, everyone, and thank you for joining.\n\nThis quarter we set out to do three things: ship the new onboarding, cut support wait times in half, and open our first office in Nairobi. [PAUSE]\n\nI'm glad to say we did *all three*.\n\nOnboarding went live in September. Since then, new teams reach their first finished project in two days instead of five.\n\nSupport wait times fell from eleven minutes to four. That is the work of a team that grew by only two people. [LOOK AT CAMERA]\n\nAnd last month we opened the doors in Nairobi, with fourteen colleagues who are already serving customers across East Africa.\n\nIn the next twenty minutes I'll walk you through what worked, what didn't, and where we go next. [CLICK, SLIDE 2]\n\nLet's start with the numbers."},
  {id:'s2',scope:'me',title:'Product video intro',body:"Meet SomaPrompt. [SMILE]\n\nA teleprompter that lives in your browser.\n\nPaste your script, press play, and look straight into the lens while your words roll past at exactly your pace.\n\nMirror it for glass rigs. Drive it from your phone. *No installs.*\n\n[PAUSE]\n\nJust you, your message, and the camera."}
 ];
-const defSet={vlang:'',font:'atk',theme:'white',lh:1.35,bionic:false,cam:'full',scrim:45,ofx:false,ofy:false,wpm:150,size:64,width:80,guide:35,cd:3,fx:false,fy:false,dim:true};
+const defSet={vlang:'',font:'atk',theme:'white',lh:1.35,bionic:false,cam:'top',scrim:45,ofx:false,ofy:false,wpm:150,size:64,width:80,guide:35,cd:3,fx:false,fy:false,dim:true};
 let st;
 const lsGet=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
@@ -452,6 +453,7 @@ function renderCtl(){
 let gH=0,tH=0,gY=0;
 function layout(){
   const g=$('glass');gH=g.clientHeight;gY=gH*st.set.guide/100;
+  if($('stage').classList.contains('camtop')){const c=$('cam');gY=Math.max(gY,c.offsetTop+c.offsetHeight+24)}
   $('guide').style.top=gY+'px';
   const t=$('text');t.style.paddingTop=gY+'px';t.style.paddingBottom=(gH-gY)+'px';
   tH=t.scrollHeight;buildMap();
@@ -822,18 +824,21 @@ $('recBtn').onclick=toggleRec;
 $('camOn').onclick=()=>stream?closeCam():openCam();
 for(const id of ['camSel','micSel','qual','fps','audOnly','ns'])$(id).addEventListener('change',()=>{if(stream&&!recr)openCam()});
 function applyCamView(){
-  const v=st.set.cam||'full',has=!!stream&&stream.getVideoTracks().length>0;
+  const v=st.set.cam||'top',has=!!stream&&stream.getVideoTracks().length>0;
   $('cam').hidden=!has||v==='off';
   $('stage').classList.toggle('camfull',has&&v==='full');
+  const wasTop=$('stage').classList.contains('camtop');
+  $('stage').classList.toggle('camtop',has&&v==='top');
+  if(wasTop!==(has&&v==='top'))requestAnimationFrame(layout);
   $('stage').style.setProperty('--scrim',(st.set.scrim??45)/100);
   $('camView').value=v;$('scrim').value=st.set.scrim??45;$('scrimO').textContent=(st.set.scrim??45)+'%';
   $('scrimRow').hidden=$('camTip').hidden=v!=='full';
   $('camBtn').classList.toggle('on',has&&v!=='off');
-  $('camBtn').textContent=!has?'Camera':v==='full'?'Camera: behind text':v==='corner'?'Camera: corner':'Camera: hidden';
+  $('camBtn').textContent=!has?'Camera':v==='top'?'Camera: top centre':v==='full'?'Camera: behind text':v==='corner'?'Camera: corner':'Camera: hidden';
 }
 function cycleCam(){
-  if(!stream){if(st.set.cam==='off')st.set.cam='full';saveSet();openCam();return}
-  st.set.cam=st.set.cam==='full'?'corner':st.set.cam==='corner'?'off':'full';saveSet();applyCamView();
+  if(!stream){if(st.set.cam==='off')st.set.cam='top';saveSet();openCam();return}
+  st.set.cam={top:'full',full:'corner',corner:'off',off:'top'}[st.set.cam]||'top';saveSet();applyCamView();
 }
 $('camBtn').onclick=cycleCam;
 $('camView').onchange=e=>{st.set.cam=e.target.value;saveSet();applyCamView()};

@@ -6,7 +6,7 @@ A self-hosted teleprompter platform for presenters and teams.
 - **Reading pace:** set your speed in words per minute. The text moves so each word crosses the reading line at exactly that pace. Cues add a short beat, and `[PAUSE]` a longer one.
 - **Second screen:** opens a window with only the scrolling text, for the monitor under your glass. In Chrome and Edge it moves itself to your external display. It has its own mirror and flip settings and stays in sync at exact pace, even at a different size. Keys pressed there control the main window.
 - **Import:** Word (.docx), text and Markdown files. Bold words in Word come through highlighted.
-- **See yourself while reading:** your camera fills the prompter with the script scrolling over it, like a selfie teleprompter, with an adjustable backdrop so the words stay readable. You can also use a corner preview or hide the camera.
+- **See yourself while reading:** by default your camera sits centred at the top of the prompter, right under a laptop's webcam, and the reading line stays just below it so your eyes stay near the lens. You can also put the camera behind the text (with an adjustable backdrop), in the corner, or hide it.
 - **Recording:** records video up to 4K at 24, 30 or 60 fps with 48 kHz voice, in the background while you read. Saves MP4 in current Chrome and Edge, otherwise WebM. Can write straight to disk for long takes.
 - **Auto captions:** every take gets captions timed to your reading, downloadable as .srt and shown in the library player. Speaker names, cues and headings are left out.
 - **Script structure:** `# Heading` lines become sections you can jump to, with a time for each. Speaker names in capitals (`ANNA:`) get their own colour. Use **Finish in** to set the speed so the script ends right on time.
@@ -123,7 +123,3 @@ This starts a throwaway server and checks sign-up and sign-in, live sync, privac
 - The device keeps a copy of each take in browser memory unless you choose **Save straight to a file while recording**. Turn that on for takes longer than about 20 minutes at 4K.
 - Your reverse proxy must accept upload requests of up to 16 MB (nginx: `client_max_body_size 16m;`).
 - Voice follow uses the browser's own speech recognition. In Chrome that service runs on Google's servers.
-
-## Standalone file
-
-`standalone.html` is a single-file version of the app with no server. Open it in Chrome or Edge to prompt and record on one computer. Scripts stay in that browser.
