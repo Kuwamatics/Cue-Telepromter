@@ -135,8 +135,10 @@ select{width:100%;font-size:16px;border:1px solid var(--line);border-radius:8px;
 .take a.btn{text-decoration:none;color:inherit;min-height:38px;font-size:14px}
 .full .side{display:none}.full .app{grid-template-columns:1fr}
 .omode .side,.omode .bar,.omode .cam,.omode .recb,.omode .badge{display:none!important}.omode .app{grid-template-columns:1fr}.omode .stage{height:100%}.omode .glass{cursor:default}
+details.more{margin:8px 0 2px}details.more summary{cursor:pointer;font-size:14px;font-weight:600;min-height:40px;display:flex;align-items:center}
+details.more summary::before{content:"";width:0;height:0;border:5px solid transparent;border-left:7px solid currentColor;margin-right:8px;flex:none;transition:transform .15s}details.more[open] summary::before{transform:rotate(90deg) translateX(2px)}
 .outs .btn.on{border-color:var(--red);color:var(--red)}
-.ohint{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:5;font:600 15px Archivo,sans-serif;color:#ddd;background:#000d;border:1px solid #333;border-radius:24px;padding:8px 16px;white-space:nowrap;pointer-events:none}
+.ohint{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);z-index:5;font:700 clamp(16px,2.2vw,26px) Archivo,sans-serif;color:#ddd;background:#000d;border:1px solid #333;border-radius:24px;padding:8px 16px;white-space:nowrap;pointer-events:none}
 .omode.fs .ohint{display:none}
 .hidebar .bar{opacity:0;transition:opacity .3s}.hidebar .bar:hover,.hidebar .bar:focus-within{opacity:1}
 .note{font-size:13px;color:var(--mute);padding:0 18px 18px}
@@ -198,6 +200,25 @@ body{overflow:auto}
       <div class="row" style="margin-top:8px"><label class="btn" for="file">Import a file</label><input type="file" id="file" accept=".txt,.md,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden><button class="btn ghost" id="copy">Copy text</button></div>
     </div>
 
+    <details class="sec" id="extSec" open>
+      <summary>Extended monitor</summary>
+      <p class="hint" id="extStat" style="margin-top:0" aria-live="polite"></p>
+      <div class="row"><button class="btn red" id="extGo">Show on extended monitor</button><button class="btn ghost" id="outClose" hidden>Close all screens</button></div>
+      <label class="tog"><input type="checkbox" id="otop"> My camera is on top of this monitor: read near the top, under the lens</label>
+      <label class="tog"><input type="checkbox" id="ofx"> Mirror the text (for teleprompter glass)</label>
+      <details class="more">
+        <summary>Presidential setup: two glass panels and a confidence monitor</summary>
+        <div class="row" style="margin-top:6px"><button class="btn" id="presGo">Open presidential setup</button></div>
+        <p class="hint">Opens a left glass, a right glass and a confidence monitor, each on its own display in Chrome and Edge, with large, narrow lines that read well on glass. Click inside each window once to make it full screen.</p>
+        <div class="row outs"><button class="btn" data-out="left">Left glass</button><button class="btn" data-out="right">Right glass</button><button class="btn" data-out="conf">Confidence monitor</button></div>
+        <label class="tog"><input type="checkbox" id="gfx"> Mirror the glass panels</label>
+        <label class="tog"><input type="checkbox" id="gfy"> Flip the glass panels vertically</label>
+        <label class="tog"><input type="checkbox" id="cbig"> Bigger text on the confidence monitor</label>
+        <label class="tog"><input type="checkbox" id="ofy"> Flip the extended monitor vertically</label>
+        <p class="hint">Using one monitor split to both glass panels? Open just the left glass.</p>
+      </details>
+    </details>
+
     <details class="sec" id="aiSec" open hidden>
       <summary>Script assistant</summary>
       <div class="chips" id="aiChips">
@@ -233,16 +254,6 @@ body{overflow:auto}
       <div class="fld"><label for="theme">Colours</label><select id="theme"><option value="white">White on black</option><option value="yellow">Yellow on black</option><option value="paper">Black on white</option></select></div>
       <div class="ctl"><label for="lh">Line spacing</label><input type="range" id="lh" min="1.1" max="1.9" step="0.05"><output id="lhO"></output></div>
       <label class="tog"><input type="checkbox" id="bionic"> Bionic reading: bold the start of each word</label>
-      <div class="grp">Presidential and second screens</div>
-      <div class="row"><button class="btn red" id="presGo">Presidential setup</button><button class="btn ghost" id="outClose" hidden>Close all screens</button></div>
-      <p class="hint">Opens a left glass, a right glass and a confidence monitor. In Chrome and Edge each window moves to its own display. It also sets large, narrow lines that read well on glass. Click inside each window once to make it full screen. All screens stay in sync, and you control them from here, from the keyboard, or from your phone.</p>
-      <div class="row outs"><button class="btn" data-out="left">Left glass</button><button class="btn" data-out="right">Right glass</button><button class="btn" data-out="conf">Confidence monitor</button><button class="btn" data-out="screen">Plain second screen</button></div>
-      <label class="tog"><input type="checkbox" id="gfx"> Mirror the glass panels</label>
-      <label class="tog"><input type="checkbox" id="gfy"> Flip the glass panels vertically</label>
-      <label class="tog"><input type="checkbox" id="cbig"> Bigger text on the confidence monitor</label>
-      <label class="tog"><input type="checkbox" id="ofx"> Mirror the plain second screen</label>
-      <label class="tog"><input type="checkbox" id="ofy"> Flip the plain second screen vertically</label>
-      <p class="hint">Using one monitor split to both glass panels? Open just the left glass.</p>
       <p class="hint">Display settings stay on this device, so each rig keeps its own.</p>
     </details>
 
@@ -292,7 +303,7 @@ body{overflow:auto}
         <kbd>V</kbd><span>Voice follow on or off</span>
         <kbd>M</kbd><span>Mirror</span>
         <kbd>F</kbd><span>Prompter only</span>
-        <kbd>O</kbd><span>Open the second screen</span>
+        <kbd>O</kbd><span>Show on the extended monitor</span>
       </div>
       <p class="hint">Most presentation clickers send ← → or Page Up and Page Down, so they move one paragraph at a time. Drag or scroll the screen to scrub.</p>
     </details>
@@ -311,7 +322,7 @@ body{overflow:auto}
       <button class="btn" id="fast" aria-label="Faster">+</button>
       <button class="btn" id="mir">Mirror</button>
       <button class="btn" id="full">Prompter only</button>
-      <button class="btn" id="outBtn">Second screen</button>
+      <button class="btn" id="outBtn">Extended monitor</button>
       <span class="clock"><b id="el">0:00</b> elapsed · <span id="left">0:00</span> left</span>
     </div>
     <div class="glass" id="glass">
@@ -359,7 +370,7 @@ const sample=[
  {id:'s1',scope:'me',title:'Quarterly update, opening',body:"Good morning, everyone, and thank you for joining.\n\nThis quarter we set out to do three things: ship the new onboarding, cut support wait times in half, and open our first office in Nairobi. [PAUSE]\n\nI'm glad to say we did *all three*.\n\nOnboarding went live in September. Since then, new teams reach their first finished project in two days instead of five.\n\nSupport wait times fell from eleven minutes to four. That is the work of a team that grew by only two people. [LOOK AT CAMERA]\n\nAnd last month we opened the doors in Nairobi, with fourteen colleagues who are already serving customers across East Africa.\n\nIn the next twenty minutes I'll walk you through what worked, what didn't, and where we go next. [CLICK, SLIDE 2]\n\nLet's start with the numbers."},
  {id:'s2',scope:'me',title:'Product video intro',body:"Meet SomaPrompt. [SMILE]\n\nA teleprompter that lives in your browser.\n\nPaste your script, press play, and look straight into the lens while your words roll past at exactly your pace.\n\nMirror it for glass rigs. Drive it from your phone. *No installs.*\n\n[PAUSE]\n\nJust you, your message, and the camera."}
 ];
-const defSet={vlang:'',font:'atk',theme:'white',lh:1.35,bionic:false,cam:'top',scrim:45,gfx:true,gfy:false,cbig:true,ofx:false,ofy:false,wpm:150,size:64,width:80,guide:35,cd:3,fx:false,fy:false,dim:true};
+const defSet={vlang:'',font:'atk',theme:'white',lh:1.35,bionic:false,cam:'top',scrim:45,otop:true,gfx:true,gfy:false,cbig:true,ofx:false,ofy:false,wpm:150,size:64,width:80,guide:35,cd:3,fx:false,fy:false,dim:true};
 let st;
 const lsGet=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
@@ -449,7 +460,7 @@ function renderCtl(){
   $('speed').value=st.set.wpm;for(const k of ['size','width','cd'])$(k).value=st.set[k];
   $('guideP').value=st.set.guide;
   $('speedO').textContent=st.set.wpm+' wpm';$('sizeO').textContent=st.set.size+'px';$('widthO').textContent=st.set.width+'%';$('guideO').textContent=st.set.guide+'%';$('cdO').textContent=st.set.cd?st.set.cd+' s':'Off';
-  $('fx').checked=st.set.fx;$('fy').checked=st.set.fy;$('dim').checked=st.set.dim;$('ofx').checked=st.set.ofx;$('ofy').checked=st.set.ofy;$('gfx').checked=st.set.gfx;$('gfy').checked=st.set.gfy;$('cbig').checked=st.set.cbig;
+  $('fx').checked=st.set.fx;$('fy').checked=st.set.fy;$('dim').checked=st.set.dim;$('ofx').checked=st.set.ofx;$('ofy').checked=st.set.ofy;$('otop').checked=st.set.otop;$('gfx').checked=st.set.gfx;$('gfy').checked=st.set.gfy;$('cbig').checked=st.set.cbig;
   $('stage').classList.toggle('flipx',st.set.fx);$('stage').classList.toggle('flipy',st.set.fy);
   const t=$('text');t.style.fontSize=st.set.size+'px';t.style.width=st.set.width+'%';
   const FONTS={atk:'"Atkinson Hyperlegible"',lexend:'Lexend',inter:'Inter',serif:'Literata,Georgia,serif'};t.style.setProperty('--pf',FONTS[st.set.font]||FONTS.atk);t.style.setProperty('--lh',st.set.lh||1.35);
@@ -462,6 +473,7 @@ function layout(){
   const g=$('glass');gH=g.clientHeight;gY=gH*st.set.guide/100;
   if($('stage').classList.contains('camtop')){const c=$('cam');gY=Math.max(gY,c.offsetTop+c.offsetHeight+24)}
   $('guide').style.top=gY+'px';
+  document.querySelector('.fade.t').style.height=Math.max(0,Math.min(gH*0.22,gY-gH*0.06))+'px';
   const t=$('text');t.style.paddingTop=gY+'px';t.style.paddingBottom=(gH-gY)+'px';
   tH=t.scrollHeight;buildMap();
   pos=M.total?clamp(yAt(wc)-gY):Math.min(pos,maxPos());target=pos;paint();
@@ -899,7 +911,7 @@ async function docxText(file){
 }
 
 /* ---------- presidential and second screens ---------- */
-const ROLES={screen:{name:'Second screen',hash:'#output'},left:{name:'Left glass',hash:'#output-left'},right:{name:'Right glass',hash:'#output-right'},conf:{name:'Confidence monitor',hash:'#output-conf'}};
+const ROLES={screen:{name:'Extended monitor',hash:'#output'},left:{name:'Left glass',hash:'#output-left'},right:{name:'Right glass',hash:'#output-right'},conf:{name:'Confidence monitor',hash:'#output-conf'}};
 const OUTROLE=Object.keys(ROLES).find(r=>ROLES[r].hash===location.hash)||null;
 const OUT=!!OUTROLE;
 // Messages between Prompter windows go only to our own origin; a file opened from disk has no usable origin, so it falls back to '*' (each side still checks which window sent it).
@@ -909,14 +921,22 @@ function refreshOuts(){
   for(const r in outWins)if(outWins[r].closed)delete outWins[r];
   document.querySelectorAll('[data-out]').forEach(b=>{const on=!!outWins[b.dataset.out];b.classList.toggle('on',on);b.textContent=ROLES[b.dataset.out].name+(on?' on':'')});
   const n=Object.keys(outWins).length;
-  $('outBtn').classList.toggle('on',!!outWins.screen);$('outBtn').textContent=n?`Screens: ${n} on`:'Second screen';
-  $('outClose').hidden=!n;
+  $('outBtn').classList.toggle('on',!!outWins.screen);$('outBtn').textContent=n>1?`Screens: ${n} on`:outWins.screen?'Monitor on':'Extended monitor';
+  $('outClose').hidden=!n;$('extGo').textContent=outWins.screen?'Bring monitor window forward':'Show on extended monitor';extStatus();
 }
+function extStatus(){
+  const e=window.screen.isExtended,el=$('extStat');if(!el)return;
+  el.textContent=outWins.screen?'Showing on the extended monitor. Click once inside that window to make it full screen. Keep controlling from here.'
+    :e===true?'Second monitor connected. Press the button and the prompter opens on it.'
+    :e===false?'No second monitor found. Connect it and set it to Extend: on Windows press the Windows key + P and choose Extend; on a Mac open System Settings, then Displays, and turn off mirroring.'
+    :'Connect your monitor and set it to extend your desktop, then press the button. If the window opens on this screen, drag it across and click it once to fill the screen.';
+}
+try{window.screen.addEventListener?.('change',extStatus)}catch(e){}
 function outSetFor(r){
   const x={...st.set};
   if(r==='left'||r==='right'){x.fx=st.set.gfx;x.fy=st.set.gfy}
   else if(r==='conf'){x.fx=false;x.fy=false;if(st.set.cbig)x.size=Math.round(st.set.size*1.3)}
-  else{x.fx=st.set.ofx;x.fy=st.set.ofy}
+  else{x.fx=st.set.ofx;x.fy=st.set.ofy;if(st.set.otop){x.guide=12;x.width=Math.min(st.set.width,62)}}
   x.cam='off';return x;
 }
 function postTo(w,m){try{w.postMessage({cue:1,...m},TARGET)}catch(e){}}
@@ -929,13 +949,14 @@ function openWin(r){
   const w=window.open(location.href.split('#')[0]+ROLES[r].hash,'cue-'+r,'popup,width=1100,height=700');
   if(w)outWins[r]=w;return w;
 }
+function dragHint(){$('badge').hidden=false;$('badge').textContent='Drag the new window to your extended monitor, then click it once to fill the screen';setTimeout(()=>{if(!voiceOn)$('badge').hidden=true},7000)}
 async function placeWins(roles){
-  if(!('getScreenDetails' in window))return;
+  if(!('getScreenDetails' in window)){dragHint();return}
   try{
     const sd=await window.getScreenDetails();
-    const ext=sd.screens.filter(x=>x!==sd.currentScreen);if(!ext.length)return;
+    const ext=sd.screens.filter(x=>x!==sd.currentScreen);if(!ext.length){dragHint();return}
     roles.forEach((r,i)=>{const w=outWins[r],x=ext[Math.min(i,ext.length-1)];if(w&&!w.closed){w.moveTo(x.availLeft,x.availTop);w.resizeTo(x.availWidth,x.availHeight)}});
-  }catch(e){}
+  }catch(e){dragHint()}
 }
 function openOutput(r){const w=openWin(r);refreshOuts();if(!w){popupBlocked(1);return}placeWins([r])}
 function presidential(){
@@ -969,10 +990,10 @@ window.addEventListener('message',e=>{
 function goFull(){const r=document.documentElement.requestFullscreen?.();r?.catch?.(()=>{})}
 function startOutput(){
   document.body.classList.add('omode');document.title=ROLES[OUTROLE].name+' · SomaPrompt';
-  $('ohint').hidden=false;$('ohint').textContent=`${ROLES[OUTROLE].name}. Click for full screen. Controls stay in the main SomaPrompt window.`;
+  $('ohint').hidden=false;$('ohint').textContent=`${ROLES[OUTROLE].name}: click anywhere to fill the screen`;goFull();
   document.addEventListener('fullscreenchange',()=>document.body.classList.toggle('fs',!!document.fullscreenElement));
   if(window.opener)toMain({t:'hello'});
-  else{$('text').innerHTML='<p style="opacity:.6">Open this window with the Presidential setup or Second screen buttons in SomaPrompt.</p>';layout()}
+  else{$('text').innerHTML='<p style="opacity:.6">Open this window with the Show on extended monitor button in SomaPrompt.</p>';layout()}
   requestAnimationFrame(layout);
 }
 
@@ -1031,8 +1052,9 @@ $('fitGo').onclick=()=>{
   $('fitMsg').textContent=need>300?`That needs ${need} words a minute, faster than the 300 maximum. Speed set to 300; the script will take ${fmt(M.total/300*60)}.`:need<60?`That needs only ${need} words a minute. Speed set to 60; the script will take ${fmt(M.total/60*60)}.`:`Speed set to ${st.set.wpm} words a minute, so the script ends in about ${fmt(M.total/st.set.wpm*60)}.`;
 };
 $('fit').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('fitGo').click()}});
-for(const k of ['ofx','ofy','gfx','gfy','cbig'])$(k).onchange=e=>{st.set[k]=e.target.checked;saveSet();outScript();outPos()};
+for(const k of ['otop','ofx','ofy','gfx','gfy','cbig'])$(k).onchange=e=>{st.set[k]=e.target.checked;saveSet();outScript();outPos()};
 $('outBtn').onclick=()=>openOutput('screen');
+$('extGo').onclick=()=>openOutput('screen');
 document.querySelector('.outs').addEventListener('click',e=>{const b=e.target.closest('[data-out]');if(b)openOutput(b.dataset.out)});
 $('presGo').onclick=presidential;
 $('outClose').onclick=()=>{for(const r in outWins){try{outWins[r].close()}catch(e){}}refreshOuts()};
@@ -1081,7 +1103,7 @@ function boot(data){
   st.scripts.forEach(s=>{s.scope=s.scope||'me'});
   renderAll();
   if(OUT){startOutput();return}
-  route();
+  route();extStatus();
   window.claude?.hot?.snapshot?.(()=>st);
   initCloud();initVoice();initAI();initRoom();
 }
