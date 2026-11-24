@@ -902,7 +902,8 @@ async function docxText(file){
 const ROLES={screen:{name:'Second screen',hash:'#output'},left:{name:'Left glass',hash:'#output-left'},right:{name:'Right glass',hash:'#output-right'},conf:{name:'Confidence monitor',hash:'#output-conf'}};
 const OUTROLE=Object.keys(ROLES).find(r=>ROLES[r].hash===location.hash)||null;
 const OUT=!!OUTROLE;
-const TARGET=location.origin&&location.origin!=='null'?location.origin:'*';
+// Messages between Prompter windows go only to our own origin; a file opened from disk has no usable origin, so it falls back to '*' (each side still checks which window sent it).
+const TARGET=/^https?:$/.test(location.protocol)&&location.origin!=='null'?location.origin:'*';
 const outWins={};
 function refreshOuts(){
   for(const r in outWins)if(outWins[r].closed)delete outWins[r];
