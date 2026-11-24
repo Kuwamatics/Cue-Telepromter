@@ -200,7 +200,7 @@ body{overflow:auto}
       <summary>Extended monitor</summary>
       <p class="hint" id="extStat" style="margin-top:0" aria-live="polite"></p>
       <div class="row"><button class="btn red" id="extGo">Show on extended monitor</button><button class="btn ghost" id="outClose" hidden>Close all screens</button></div>
-      <label class="tog"><input type="checkbox" id="otop"> My camera is on top of this monitor: read near the top, under the lens</label>
+      <label class="tog"><input type="checkbox" id="otop"> My camera is on top of this monitor: read at the very top, right under the lens</label>
       <label class="tog"><input type="checkbox" id="ofx"> Mirror the text (for teleprompter glass)</label>
       <details class="more">
         <summary>Presidential setup: two glass panels and a confidence monitor</summary>
@@ -237,7 +237,7 @@ body{overflow:auto}
       <div class="row" style="flex-wrap:nowrap;margin:2px 0 6px"><label for="fit" style="font-size:14px;white-space:nowrap">Finish in</label><input type="text" id="fit" placeholder="1:30" inputmode="numeric" autocomplete="off" style="width:6em" aria-describedby="fitMsg"><button class="btn" id="fitGo">Set speed</button></div>
       <p class="hint" id="fitMsg" style="margin:0 0 6px">Type a length, like 1:30, and the speed is set so the script ends right on time.</p>
       <div class="ctl"><label for="width">Line width</label><input type="range" id="width" min="40" max="100" step="5"><output id="widthO"></output></div>
-      <div class="ctl"><label for="guideP">Reading line</label><input type="range" id="guideP" min="15" max="60" step="5"><output id="guideO"></output></div>
+      <div class="ctl"><label for="guideP">Reading line</label><input type="range" id="guideP" min="3" max="60" step="1"><output id="guideO"></output></div>
       <div class="ctl"><label for="cd">Countdown</label><input type="range" id="cd" min="0" max="10" step="1"><output id="cdO"></output></div>
       <label class="tog"><input type="checkbox" id="fx"> Mirror horizontally (for beam-splitter glass)</label>
       <label class="tog"><input type="checkbox" id="fy"> Flip vertically</label>
@@ -466,7 +466,8 @@ function renderCtl(){
 }
 let gH=0,tH=0,gY=0;
 function layout(){
-  const g=$('glass');gH=g.clientHeight;gY=gH*st.set.guide/100;
+  // Never closer to the top than one line: the line being read rises by one line as you read it, and must stay fully on screen.
+  const g=$('glass');gH=g.clientHeight;gY=Math.max(gH*st.set.guide/100,st.set.size*(st.set.lh||1.35)+8);
   if($('stage').classList.contains('camtop')){const c=$('cam');gY=Math.max(gY,c.offsetTop+c.offsetHeight+24)}
   $('guide').style.top=gY+'px';
   document.querySelector('.fade.t').style.height=Math.max(0,Math.min(gH*0.22,gY-gH*0.06))+'px';
@@ -932,7 +933,7 @@ function outSetFor(r){
   const x={...st.set};
   if(r==='left'||r==='right'){x.fx=st.set.gfx;x.fy=st.set.gfy}
   else if(r==='conf'){x.fx=false;x.fy=false;if(st.set.cbig)x.size=Math.round(st.set.size*1.3)}
-  else{x.fx=st.set.ofx;x.fy=st.set.ofy;if(st.set.otop){x.guide=12;x.width=Math.min(st.set.width,62)}}
+  else{x.fx=st.set.ofx;x.fy=st.set.ofy;if(st.set.otop){x.guide=3;x.width=Math.min(st.set.width,56)}}
   x.cam='off';return x;
 }
 function postTo(w,m){try{w.postMessage({cue:1,...m},TARGET)}catch(e){}}
