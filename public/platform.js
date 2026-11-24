@@ -92,7 +92,7 @@
   }
 
   const configP = fetch('/api/config').then((r) => r.json()).catch(() => ({ ai: false, signup: true }));
-  const OUTPUT = location.hash === '#output'; // second-screen window: driven by the main window, no account needed
+  const OUTPUT = location.hash.startsWith('#output'); // second-screen window: driven by the main window, no account needed
   const meP = (async () => {
     if (OUTPUT) return null;
     try { const s = await api('/api/session'); if (s.me) return s.me; } catch {
